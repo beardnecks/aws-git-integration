@@ -130,6 +130,12 @@ def lambda_handler(event, context):
     # APIKeys, it is recommended to use a different API key for each repo that uses this function
     apikeys = event['context']['api-secrets'].split(',')
     ip = ip_address(event['context']['source-ip'])
+    # Check if it is a pull request(PR) or not.
+    pr = False
+    # Unsure wether this if statement works or not, must be tested. 
+    # Figure out how to check if event == pull_request.
+    if 'X-Git-Event' in event['params']['header'].keys() == 'pull_request':
+        pr = True
     secure = False
     for net in ipranges:
         if ip in net:
@@ -176,6 +182,16 @@ def lambda_handler(event, context):
     if not secure:
         logger.error('Source IP %s is not allowed' % event['context']['source-ip'])
         raise Exception('Source IP %s is not allowed' % event['context']['source-ip'])
+
+    # Check if there is PR
+    if not pr:
+        logger.error('This is not a Pull Request')
+        raise Exception('This is not a Pull Request')
+
+    # Opened PR
+    if 'action' in event['body-json'] != 'opened':
+        logger.error('PR action is not opened, it is %s' % event['body-json']['action'])
+        raise Exception('PR action is not opened, it is %s' % event['body-json']['action'])
 
     # GitHub publish event
     if('action' in event['body-json'] and event['body-json']['action'] == 'published'):
