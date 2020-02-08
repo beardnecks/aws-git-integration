@@ -199,6 +199,11 @@ def lambda_handler(event, context):
         if('action' in event['body-json'] and event['body-json']['action'] != 'opened' and not push):
             logger.error('PR action is not opened, it is %s' % event['body-json']['action'])
             raise Exception('PR action is not opened, it is %s' % event['body-json']['action'])
+    # Check if PR to master
+    if pr:
+        if ('base' in event['body-json']['pull_request'] and event['body-json']['pull_request']['base']['ref'] != 'master'):
+            logger.error('PR is not to master, it is %s' % event['body-json']['pull_request']['base']['ref'])
+            raise Exception('PR is not to master, it is %s' % event['body-json']['pull_request']['base']['ref'])
 
     # Check if: Push to master 
     if push:
