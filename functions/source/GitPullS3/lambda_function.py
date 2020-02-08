@@ -205,7 +205,7 @@ def lambda_handler(event, context):
             logger.error('PR is not to master, it is %s' % event['body-json']['pull_request']['base']['ref'])
             raise Exception('PR is not to master, it is %s' % event['body-json']['pull_request']['base']['ref'])
 
-    # Check if: Push to master 
+    # Check if: Push to master.
     if push:
         if ('ref' in event['body-json'] and event['body-json']['ref'] != 'refs/heads/master' and not pr):
             logger.error('Push is not to master, it is to %s' % event['body-json']['ref'])
