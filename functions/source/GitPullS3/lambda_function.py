@@ -134,8 +134,14 @@ def lambda_handler(event, context):
     pr = False
     # Unsure wether this if statement works or not, must be tested. 
     # Figure out how to check if event == pull_request.
-    if 'X-Git-Event' in event['params']['header'].keys() == 'pull_request':
+    if event['params']['header']['X-GitHub-Event'] == 'pull_request':
         pr = True
+    # Check if it is a push or not
+    push = False
+    # Unsure wether this if statement works or not, must be tested. 
+    if event['params']['header']['X-GitHub-Event'] == 'push':
+        push = True
+
     secure = False
     for net in ipranges:
         if ip in net:
@@ -183,15 +189,22 @@ def lambda_handler(event, context):
         logger.error('Source IP %s is not allowed' % event['context']['source-ip'])
         raise Exception('Source IP %s is not allowed' % event['context']['source-ip'])
 
-    # Check if there is PR
-    if not pr:
-        logger.error('This is not a Pull Request')
-        raise Exception('This is not a Pull Request')
+    # Check if there is PR or a push
+    if not (pr or push):
+        logger.error('This is not a Pull Request or a Push')
+        raise Exception('This is not a Pull Request or a Push')
 
-    # Opened PR
-    if 'action' in event['body-json'] != 'opened':
-        logger.error('PR action is not opened, it is %s' % event['body-json']['action'])
-        raise Exception('PR action is not opened, it is %s' % event['body-json']['action'])
+    # Check if: Opened PR
+    if pr:
+        if('action' in event['body-json'] and event['body-json']['action'] != 'opened' and not push):
+            logger.error('PR action is not opened, it is %s' % event['body-json']['action'])
+            raise Exception('PR action is not opened, it is %s' % event['body-json']['action'])
+
+    # Check if: Push to master 
+    if push:
+        if ('ref' in event['body-json'] and event['body-json']['ref'] != 'refs/heads/master' and not pr):
+            logger.error('Push is not to master, it is to %s' % event['body-json']['ref'])
+            raise Exception('Push is not to master it is to %s' % event['body-json']['ref'])
 
     # GitHub publish event
     if('action' in event['body-json'] and event['body-json']['action'] == 'published'):
