@@ -16,6 +16,8 @@ import logging
 import hmac
 import hashlib
 import distutils.util
+# Regex
+import re
 
 # If true the function will not include .git folder in the zip
 exclude_git = bool(distutils.util.strtobool(os.environ['ExcludeGit']))
@@ -189,6 +191,7 @@ def lambda_handler(event, context):
         logger.error('Source IP %s is not allowed' % event['context']['source-ip'])
         raise Exception('Source IP %s is not allowed' % event['context']['source-ip'])
 
+
     # Check if there is PR or a push
     if not (pr or push):
         logger.error('This is not a Pull Request or a Push')
@@ -200,14 +203,18 @@ def lambda_handler(event, context):
             logger.error('PR action is not opened, it is %s' % event['body-json']['action'])
             raise Exception('PR action is not opened, it is %s' % event['body-json']['action'])
     # Check if PR to master
+    # Regex object, string that starts with master, widlcard after. (master*)
+    regex = re.compile("^master")
     if pr:
-        if ('base' in event['body-json']['pull_request'] and event['body-json']['pull_request']['base']['ref'] != 'master'):
+        if ('base' in event['body-json']['pull_request'] and not regex.match(event['body-json']['pull_request']['base']['ref'])):
             logger.error('PR is not to master, it is %s' % event['body-json']['pull_request']['base']['ref'])
             raise Exception('PR is not to master, it is %s' % event['body-json']['pull_request']['base']['ref'])
 
     # Check if: Push to master.
+    # Regex object, string that starts with master, widlcard after. (master*)
+    regex = re.compile("^refs/heads/master") 
     if push:
-        if ('ref' in event['body-json'] and event['body-json']['ref'] != 'refs/heads/master' and not pr):
+        if ('ref' in event['body-json'] and not regex.match(event['body-json']['ref']) and not pr):
             logger.error('Push is not to master, it is to %s' % event['body-json']['ref'])
             raise Exception('Push is not to master it is to %s' % event['body-json']['ref'])
 
