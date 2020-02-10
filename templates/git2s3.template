@@ -34,11 +34,11 @@
                 },
                 {
                     "Label": {
-                        "default": "AWS Quick Start Configuration"
+                        "default": "Stack initialization Configuration"
                     },
                     "Parameters": [
-                        "QSS3BucketName",
-                        "QSS3KeyPrefix"
+                        "StackBucketName",
+                        "StackBucketPrefix"
                     ]
                 }
             ],
@@ -64,11 +64,11 @@
                 "OutputBucketName": {
                     "default": "Output S3 Bucket Name"
                 },
-                "QSS3BucketName": {
-                    "default": "Quick Start S3 Bucket Name"
+                "StackBucketName": {
+                    "default": "Stack init S3 Bucket Name"
                 },
-                "QSS3KeyPrefix": {
-                    "default": "Quick Start S3 Key Prefix"
+                "StackBucketPrefix": {
+                    "default": "Stack init S3 Key Prefix"
                 }
             }
         }
@@ -115,17 +115,17 @@
             "Type": "String",
             "Default": ""
         },
-        "QSS3BucketName": {
+        "StackBucketName": {
             "AllowedPattern": "^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$",
-            "ConstraintDescription": "Quick Start bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).",
-            "Default": "aws-quickstart",
-            "Description": "S3 bucket name for the Quick Start assets. Quick Start bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).",
+            "ConstraintDescription": "Stack init bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).",
+            "Default": "t-neckbeards-stackinit-s",
+            "Description": "S3 bucket name for the Stack init assets. Stack init bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).",
             "Type": "String"
         },
-        "QSS3KeyPrefix": {
+        "StackBucketPrefix": {
             "AllowedPattern": "^[0-9a-zA-Z-/]*$",
             "ConstraintDescription": "Quick Start key prefix can include numbers, lowercase letters, uppercase letters, hyphens (-), and forward slash (/).",
-            "Default": "quickstart-git2s3/",
+            "Default": "",
             "Description": "S3 key prefix for the Quick Start assets. Quick Start key prefix can include numbers, lowercase letters, uppercase letters, hyphens (-), and forward slash (/).",
             "Type": "String"
         },
@@ -261,10 +261,10 @@
                     "Ref": "LambdaZipsBucket"
                 },
                 "SourceBucket": {
-                    "Ref": "QSS3BucketName"
+                    "Ref": "StackBucketName"
                 },
                 "Prefix": {
-                    "Ref": "QSS3KeyPrefix"
+                    "Ref": "StackBucketPrefix"
                 },
                 "Objects": [
                     "functions/packages/CreateSSHKey/lambda.zip",
@@ -306,7 +306,7 @@
                                     ],
                                     "Resource": [
                                         {
-                                            "Fn::Sub": "arn:aws:s3:::${QSS3BucketName}/${QSS3KeyPrefix}*"
+                                            "Fn::Sub": "arn:aws:s3:::${StackBucketName}/${StackBucketPrefix}*"
                                         }
                                     ]
                                 },
@@ -318,7 +318,7 @@
                                     ],
                                     "Resource": [
                                         {
-                                            "Fn::Sub": "arn:aws:s3:::${LambdaZipsBucket}/${QSS3KeyPrefix}*"
+                                            "Fn::Sub": "arn:aws:s3:::${LambdaZipsBucket}/${StackBucketPrefix}*"
                                         }
                                     ]
                                 }
@@ -647,7 +647,7 @@
                         "Ref": "LambdaZipsBucket"
                     },
                     "S3Key": {
-                        "Fn::Sub": "${QSS3KeyPrefix}functions/packages/CreateSSHKey/lambda.zip"
+                        "Fn::Sub": "${StackBucketPrefix}functions/packages/CreateSSHKey/lambda.zip"
                     }
                 }
             }
@@ -785,7 +785,7 @@
                         "Ref": "LambdaZipsBucket"
                     },
                     "S3Key": {
-                        "Fn::Sub": "${QSS3KeyPrefix}functions/packages/DeleteBucketContents/lambda.zip"
+                        "Fn::Sub": "${StackBucketPrefix}functions/packages/DeleteBucketContents/lambda.zip"
                     }
                 }
             }
@@ -939,7 +939,7 @@
                         "Ref": "LambdaZipsBucket"
                     },
                     "S3Key": {
-                        "Fn::Sub": "${QSS3KeyPrefix}functions/packages/GitPullS3/lambda.zip"
+                        "Fn::Sub": "${StackBucketPrefix}functions/packages/GitPullS3/lambda.zip"
                     }
                 }
             }
@@ -1054,7 +1054,7 @@
                         "Ref": "LambdaZipsBucket"
                     },
                     "S3Key": {
-                        "Fn::Sub": "${QSS3KeyPrefix}functions/packages/ZipDl/lambda.zip"
+                        "Fn::Sub": "${StackBucketPrefix}functions/packages/ZipDl/lambda.zip"
                     }
                 },
                 "Runtime": "python2.7",
