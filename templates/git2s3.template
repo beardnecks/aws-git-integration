@@ -856,7 +856,7 @@
                 "Timeout": "300",
                 "Environment": {
                     "Variables":
-                        { "ExcludeGit":"True" }
+                        { "ExcludeGit":"False" }
                 },
                 "Code": {
                     "S3Bucket": {
