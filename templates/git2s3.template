@@ -90,21 +90,6 @@
             "Description": "S3 key prefix for the Quick Start assets. Quick Start key prefix can include numbers, lowercase letters, uppercase letters, hyphens (-), and forward slash (/).",
             "Type": "String"
         },
-        "VPCId": {
-            "Description": "Id of the VPC the DL Zip lambda should run in",
-            "Type": "String",
-            "Default": ""
-        },
-        "VPCCidrRange": {
-            "Description": "CIDR range of the VPC",
-            "Type": "String",
-            "Default": ""
-        },
-        "SubnetIds": {
-            "Description": "SubnetIds the DL Zip lambda should run in",
-            "Type": "CommaDelimitedList",
-            "Default": ""
-        },
         "ScmHostnameOverride": {
             "Description": "Hostname to override the incoming json request with",
             "Type": "String",
@@ -159,11 +144,6 @@
                     ]
                 }
             ]
-        },
-        "ShouldRunInVPC":{
-          "Fn::Not": [{
-            "Fn::Equals": [{"Ref": "VPCId"}, ""]
-          }]
         }
     },
     "Resources": {
@@ -855,8 +835,9 @@
                 "Runtime": "python2.7",
                 "Timeout": "300",
                 "Environment": {
-                    "Variables":
-                        { "ExcludeGit":"False" }
+                    "Variables": {
+                        "ExcludeGit": "False"
+                    }
                 },
                 "Code": {
                     "S3Bucket": {
