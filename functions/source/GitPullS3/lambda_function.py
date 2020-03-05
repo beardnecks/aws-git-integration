@@ -113,8 +113,8 @@ def zip_repo(repo_path, repo_name):
     return '/tmp/'+repo_name.replace('/', '_')+'.zip'
 
 
-def push_s3(filename, repo_name, outputbucket):
-    s3key = '%s/%s' % (repo_name, filename.replace('/tmp/', ''))
+def push_s3(filename, repo_name, prefix, outputbucket):
+    s3key = '%s/%s/%s' % (repo_name, prefix, filename.replace('/tmp/', ''))
     logger.info('pushing zip to s3://%s/%s' % (outputbucket, s3key))
     data = open(filename, 'rb')
     s3.put_object(Bucket=outputbucket, Body=data, Key=s3key)
@@ -209,14 +209,17 @@ def lambda_handler(event, context):
         if ('base' in event['body-json']['pull_request'] and not regex.match(event['body-json']['pull_request']['base']['ref'])):
             logger.error('PR is not to master, it is %s' % event['body-json']['pull_request']['base']['ref'])
             raise Exception('PR is not to master, it is %s' % event['body-json']['pull_request']['base']['ref'])
+        else:
+            prefix="dev"
 
     # Check if: Push to master.
-    # Regex object, string that starts with master, widlcard after. (master*)
-    regex = re.compile("^refs/heads/master") 
+    regex = re.compile("refs/heads/master") 
     if push:
         if ('ref' in event['body-json'] and not regex.match(event['body-json']['ref']) and not pr):
             logger.error('Push is not to master, it is to %s' % event['body-json']['ref'])
             raise Exception('Push is not to master it is to %s' % event['body-json']['ref'])
+        else:
+            prefix="prod"
 
     # GitHub publish event
     if('action' in event['body-json'] and event['body-json']['action'] == 'published'):
@@ -268,7 +271,7 @@ def lambda_handler(event, context):
         repo = create_repo(repo_path, remote_url, creds)
     pull_repo(repo, branch_name, remote_url, creds)
     zipfile = zip_repo(repo_path, repo_name)
-    push_s3(zipfile, repo_name, outputbucket)
+    push_s3(zipfile, repo_name, prefix, outputbucket)
     if cleanup:
         logger.info('Cleanup Lambda container...')
         shutil.rmtree(repo_path)
