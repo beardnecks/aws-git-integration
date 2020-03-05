@@ -213,7 +213,7 @@ def lambda_handler(event, context):
             prefix="dev"
 
     # Check if: Push to master.
-    regex = re.compile("refs/heads/master") 
+    regex = re.compile("^refs/heads/master$") 
     if push:
         if ('ref' in event['body-json'] and not regex.match(event['body-json']['ref']) and not pr):
             logger.error('Push is not to master, it is to %s' % event['body-json']['ref'])
