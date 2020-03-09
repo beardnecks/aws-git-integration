@@ -9,34 +9,41 @@ import cfnresponse
 import traceback
 import boto3
 
-def lambda_handler(event,context):
+
+def lambda_handler(event, context):
     try:
         if event['RequestType'] == 'Delete':
             s3 = boto3.client('s3')
             # Delete KeyBucket contents
-            print 'Getting KeyBucket objects...'
+            print
+            'Getting KeyBucket objects...'
             s3objects = s3.list_objects_v2(Bucket=event["ResourceProperties"]["KeyBucket"])
             if 'Contents' in s3objects.keys():
-                print 'Deleting KeyBucket objects %s...' % str([{'Key':key['Key']} for key in s3objects['Contents']])
-                s3.delete_objects(Bucket=event["ResourceProperties"]["KeyBucket"],Delete={'Objects':[{'Key':key['Key']} for key in s3objects['Contents']]})
+                print
+                'Deleting KeyBucket objects %s...' % str([{'Key': key['Key']} for key in s3objects['Contents']])
+                s3.delete_objects(Bucket=event["ResourceProperties"]["KeyBucket"],
+                                  Delete={'Objects': [{'Key': key['Key']} for key in s3objects['Contents']]})
             # Delete Output bucket contents and versions
-            print 'Getting OutputBucket objects...'
-            objects=[]
-            versions=s3.list_object_versions(Bucket=event["ResourceProperties"]["OutputBucket"])
+            print
+            'Getting OutputBucket objects...'
+            objects = []
+            versions = s3.list_object_versions(Bucket=event["ResourceProperties"]["OutputBucket"])
             while versions:
                 if 'Versions' in versions.keys():
                     for v in versions['Versions']:
-                        objects.append({'Key':v['Key'],'VersionId': v['VersionId']})
-                if 'DeleteMarkers'in versions.keys():
+                        objects.append({'Key': v['Key'], 'VersionId': v['VersionId']})
+                if 'DeleteMarkers' in versions.keys():
                     for v in versions['DeleteMarkers']:
-                        objects.append({'Key':v['Key'],'VersionId': v['VersionId']})
+                        objects.append({'Key': v['Key'], 'VersionId': v['VersionId']})
                 if versions['IsTruncated']:
-                    versions=s3.list_object_versions(Bucket=event["ResourceProperties"]["OutputBucket"],VersionIdMarker=versions['NextVersionIdMarker'])
+                    versions = s3.list_object_versions(Bucket=event["ResourceProperties"]["OutputBucket"],
+                                                       VersionIdMarker=versions['NextVersionIdMarker'])
                 else:
-                    versions=False
+                    versions = False
             if objects != []:
-                s3.delete_objects(Bucket=event["ResourceProperties"]["OutputBucket"],Delete={'Objects':objects})
+                s3.delete_objects(Bucket=event["ResourceProperties"]["OutputBucket"], Delete={'Objects': objects})
         cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, '')
     except:
-        print traceback.print_exc()
+        print
+        traceback.print_exc()
         cfnresponse.send(event, context, cfnresponse.FAILED, {}, '')
