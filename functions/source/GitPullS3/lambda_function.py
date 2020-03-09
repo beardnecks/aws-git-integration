@@ -84,7 +84,7 @@ def pull_repo(repo, branch_name, remote_url, creds):
         remote = repo.create_remote('origin', remote_url)
     logger.info('Fetching and merging changes from %s branch %s', remote_url, branch_name)
     remote.fetch(callbacks=creds)
-    if(branch_name.startswith('tags/')):
+    if (branch_name.startswith('tags/')):
         ref = 'refs/' + branch_name
     else:
         ref = 'refs/remotes/origin/' + branch_name
@@ -98,19 +98,19 @@ def pull_repo(repo, branch_name, remote_url, creds):
 
 def zip_repo(repo_path, repo_name):
     logger.info('Creating zipfile...')
-    zf = ZipFile('/tmp/'+repo_name.replace('/', '_')+'.zip', 'w')
+    zf = ZipFile('/tmp/' + repo_name.replace('/', '_') + '.zip', 'w')
     for dirname, subdirs, files in os.walk(repo_path):
         if exclude_git:
             try:
                 subdirs.remove('.git')
             except ValueError:
                 pass
-        zdirname = dirname[len(repo_path)+1:]
+        zdirname = dirname[len(repo_path) + 1:]
         zf.write(dirname, zdirname)
         for filename in files:
             zf.write(os.path.join(dirname, filename), os.path.join(zdirname, filename))
     zf.close()
-    return '/tmp/'+repo_name.replace('/', '_')+'.zip'
+    return '/tmp/' + repo_name.replace('/', '_') + '.zip'
 
 
 def push_s3(filename, repo_name, prefix, outputbucket):
@@ -191,7 +191,6 @@ def lambda_handler(event, context):
         logger.error('Source IP %s is not allowed' % event['context']['source-ip'])
         raise Exception('Source IP %s is not allowed' % event['context']['source-ip'])
 
-
     # Check if there is PR or a push
     if not (pr or push):
         logger.error('This is not a Pull Request or a Push')
@@ -199,30 +198,31 @@ def lambda_handler(event, context):
 
     # Check if: Opened PR
     if pr:
-        if('action' in event['body-json'] and event['body-json']['action'] != 'opened' and not push):
+        if ('action' in event['body-json'] and event['body-json']['action'] != 'opened' and not push):
             logger.error('PR action is not opened, it is %s' % event['body-json']['action'])
             raise Exception('PR action is not opened, it is %s' % event['body-json']['action'])
     # Check if PR to master
     # Regex object, string that starts with master, widlcard after. (master*)
     regex = re.compile("^master")
     if pr:
-        if ('base' in event['body-json']['pull_request'] and not regex.match(event['body-json']['pull_request']['base']['ref'])):
+        if ('base' in event['body-json']['pull_request'] and not regex.match(
+                event['body-json']['pull_request']['base']['ref'])):
             logger.error('PR is not to master, it is %s' % event['body-json']['pull_request']['base']['ref'])
             raise Exception('PR is not to master, it is %s' % event['body-json']['pull_request']['base']['ref'])
         else:
-            prefix="dev"
+            prefix = "dev"
 
     # Check if: Push to master.
-    regex = re.compile("^refs/heads/master$") 
+    regex = re.compile("^refs/heads/master$")
     if push:
         if ('ref' in event['body-json'] and not regex.match(event['body-json']['ref']) and not pr):
             logger.error('Push is not to master, it is to %s' % event['body-json']['ref'])
             raise Exception('Push is not to master it is to %s' % event['body-json']['ref'])
         else:
-            prefix="prod"
+            prefix = "prod"
 
     # GitHub publish event
-    if('action' in event['body-json'] and event['body-json']['action'] == 'published'):
+    if ('action' in event['body-json'] and event['body-json']['action'] == 'published'):
         branch_name = 'tags/%s' % event['body-json']['release']['tag_name']
         repo_name = full_name + '/release'
     else:
@@ -241,7 +241,10 @@ def lambda_handler(event, context):
         remote_url = event['body-json']['project']['git_ssh_url']
     except Exception:
         try:
-            remote_url = 'git@'+event['body-json']['repository']['links']['html']['href'].replace('https://', '').replace('/', ':', 1)+'.git'
+            remote_url = 'git@' + event['body-json']['repository']['links']['html']['href'].replace('https://',
+                                                                                                    '').replace('/',
+                                                                                                                ':',
+                                                                                                                1) + '.git'
         except:
             try:
                 # GitHub
@@ -255,11 +258,13 @@ def lambda_handler(event, context):
                     remote_url = event['body-json']['repository']['links']['clone'][ssh_index]['href']
                 except:
                     # BitBucket pull-request
-                    for i, url in enumerate(event['body-json']['pullRequest']['fromRef']['repository']['links']['clone']):
+                    for i, url in enumerate(
+                            event['body-json']['pullRequest']['fromRef']['repository']['links']['clone']):
                         if url['name'] == 'ssh':
                             ssh_index = i
 
-                    remote_url = event['body-json']['pullRequest']['fromRef']['repository']['links']['clone'][ssh_index]['href']
+                    remote_url = \
+                    event['body-json']['pullRequest']['fromRef']['repository']['links']['clone'][ssh_index]['href']
     repo_path = '/tmp/%s' % repo_name
     creds = RemoteCallbacks(credentials=get_keys(keybucket, pubkey), )
     try:
