@@ -15,24 +15,24 @@ def lambda_handler(event, context):
         if event['RequestType'] == 'Delete':
             s3 = boto3.client('s3')
             # Delete KeyBucket contents
-            print
+            print()
             'Getting KeyBucket objects...'
             s3objects = s3.list_objects_v2(Bucket=event["ResourceProperties"]["KeyBucket"])
-            if 'Contents' in s3objects.keys():
-                print
+            if 'Contents' in list(s3objects.keys()):
+                print()
                 'Deleting KeyBucket objects %s...' % str([{'Key': key['Key']} for key in s3objects['Contents']])
                 s3.delete_objects(Bucket=event["ResourceProperties"]["KeyBucket"],
                                   Delete={'Objects': [{'Key': key['Key']} for key in s3objects['Contents']]})
             # Delete Output bucket contents and versions
-            print
+            print()
             'Getting OutputBucket objects...'
             objects = []
             versions = s3.list_object_versions(Bucket=event["ResourceProperties"]["OutputBucket"])
             while versions:
-                if 'Versions' in versions.keys():
+                if 'Versions' in list(versions.keys()):
                     for v in versions['Versions']:
                         objects.append({'Key': v['Key'], 'VersionId': v['VersionId']})
-                if 'DeleteMarkers' in versions.keys():
+                if 'DeleteMarkers' in list(versions.keys()):
                     for v in versions['DeleteMarkers']:
                         objects.append({'Key': v['Key'], 'VersionId': v['VersionId']})
                 if versions['IsTruncated']:
@@ -44,6 +44,6 @@ def lambda_handler(event, context):
                 s3.delete_objects(Bucket=event["ResourceProperties"]["OutputBucket"], Delete={'Objects': objects})
         cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, '')
     except:
-        print
+        print()
         traceback.print_exc()
         cfnresponse.send(event, context, cfnresponse.FAILED, {}, '')
