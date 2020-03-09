@@ -12,7 +12,8 @@ from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend as crypto_default_backend
 
-def lambda_handler(event,context):
+
+def lambda_handler(event, context):
     try:
         if event['RequestType'] == 'Create':
             # Generate keys
@@ -29,14 +30,14 @@ def lambda_handler(event,context):
             print(priv_key)
             print(pub_key)
             # Encrypt private key
-            kms = boto3.client('kms',region_name=event["ResourceProperties"]["Region"])
-            enc_key = kms.encrypt(KeyId=event["ResourceProperties"]["KMSKey"],Plaintext=priv_key)['CiphertextBlob']
-            f = open('/tmp/enc_key','wb')
+            kms = boto3.client('kms', region_name=event["ResourceProperties"]["Region"])
+            enc_key = kms.encrypt(KeyId=event["ResourceProperties"]["KMSKey"], Plaintext=priv_key)['CiphertextBlob']
+            f = open('/tmp/enc_key', 'wb')
             f.write(enc_key)
             f.close()
             # Upload priivate key to S3
             s3 = boto3.client('s3')
-            s3.upload_file('/tmp/enc_key',event["ResourceProperties"]["KeyBucket"],'enc_key')
+            s3.upload_file('/tmp/enc_key', event["ResourceProperties"]["KeyBucket"], 'enc_key')
         else:
             pub_key = event['PhysicalResourceId']
         cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, pub_key)
