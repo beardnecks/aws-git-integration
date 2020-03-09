@@ -128,7 +128,7 @@ def lambda_handler(event, context):
     # Source IP ranges to allow requests from, if the IP is in one of these the request will not be chacked for an api key
     ipranges = []
     for i in event['context']['allowed-ips'].split(','):
-        ipranges.append(ip_network(u'%s' % i))
+        ipranges.append(ip_network('%s' % i))
     # APIKeys, it is recommended to use a different API key for each repo that uses this function
     apikeys = event['context']['api-secrets'].split(',')
     ip = ip_address(event['context']['source-ip'])
@@ -148,13 +148,13 @@ def lambda_handler(event, context):
     for net in ipranges:
         if ip in net:
             secure = True
-    if 'X-Git-Token' in event['params']['header'].keys():
+    if 'X-Git-Token' in list(event['params']['header'].keys()):
         if event['params']['header']['X-Git-Token'] in apikeys:
             secure = True
-    if 'X-Gitlab-Token' in event['params']['header'].keys():
+    if 'X-Gitlab-Token' in list(event['params']['header'].keys()):
         if event['params']['header']['X-Gitlab-Token'] in apikeys:
             secure = True
-    if 'X-Hub-Signature' in event['params']['header'].keys():
+    if 'X-Hub-Signature' in list(event['params']['header'].keys()):
         for k in apikeys:
             if 'use-sha256' in event['context']:
                 k1 = hmac.new(str(k), str(event['context']['raw-body']), hashlib.sha256).hexdigest()
