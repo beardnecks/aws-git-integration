@@ -5,7 +5,7 @@
 #  This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or implied.
 #  See the License for the specific language governing permissions and limitations under the License.
 
-from pygit2 import Keypair, discover_repository, Repository, clone_repository, RemoteCallbacks
+from pygit2 import Keypair, discover_repository, Repository, clone_repository, RemoteCallbacks, GitError
 from boto3 import client
 import os
 import stat
@@ -264,7 +264,7 @@ def lambda_handler(event, context):
                             ssh_index = i
 
                     remote_url = \
-                    event['body-json']['pullRequest']['fromRef']['repository']['links']['clone'][ssh_index]['href']
+                        event['body-json']['pullRequest']['fromRef']['repository']['links']['clone'][ssh_index]['href']
     repo_path = '/tmp/%s' % repo_name
     creds = RemoteCallbacks(credentials=get_keys(keybucket, pubkey), )
     try:
@@ -274,7 +274,16 @@ def lambda_handler(event, context):
     except Exception:
         logger.info('creating new repo for %s in %s' % (remote_url, repo_path))
         repo = create_repo(repo_path, remote_url, creds)
-    pull_repo(repo, branch_name, remote_url, creds)
+
+    try:
+        pull_repo(repo, branch_name, remote_url, creds)
+    except GitError as e:
+        if "conflicts" in e.message:
+            logger.info('Found repo conflicts, redownloading repo')
+            shutil.rmtree(repo_path)
+            repo = create_repo(repo_path, remote_url, creds)
+            pull_repo(repo, branch_name, remote_url, creds)
+
     zipfile = zip_repo(repo_path, repo_name)
     push_s3(zipfile, repo_name, prefix, outputbucket)
     if cleanup:
