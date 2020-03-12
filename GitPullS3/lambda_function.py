@@ -43,10 +43,11 @@ def write_key(filename, contents):
     mode = stat.S_IRUSR | stat.S_IWUSR
     umask_original = os.umask(0)
     try:
-        handle = os.fdopen(os.open(filename, os.O_WRONLY | os.O_CREAT, mode), 'w')
+        handle = os.fdopen(os.open(filename, os.O_WRONLY | os.O_CREAT, mode), 'wb')
     finally:
         os.umask(umask_original)
-    handle.write(contents + '\n')
+
+    handle.write(contents + b"\n")
     handle.close()
 
 
@@ -56,7 +57,7 @@ def get_keys(keybucket, pubkey, update=False):
         enckey = s3.get_object(Bucket=keybucket, Key=key)['Body'].read()
         privkey = kms.decrypt(CiphertextBlob=enckey)['Plaintext']
         write_key('/tmp/id_rsa', privkey)
-        write_key('/tmp/id_rsa.pub', pubkey)
+        write_key('/tmp/id_rsa.pub', str.encode(pubkey))
     return Keypair('git', '/tmp/id_rsa.pub', '/tmp/id_rsa', '')
 
 
@@ -128,7 +129,7 @@ def lambda_handler(event, context):
     # Source IP ranges to allow requests from, if the IP is in one of these the request will not be chacked for an api key
     ipranges = []
     for i in event['context']['allowed-ips'].split(','):
-        ipranges.append(ip_network(u'%s' % i))
+        ipranges.append(ip_network('%s' % i))
     # APIKeys, it is recommended to use a different API key for each repo that uses this function
     apikeys = event['context']['api-secrets'].split(',')
     ip = ip_address(event['context']['source-ip'])
@@ -148,13 +149,13 @@ def lambda_handler(event, context):
     for net in ipranges:
         if ip in net:
             secure = True
-    if 'X-Git-Token' in event['params']['header'].keys():
+    if 'X-Git-Token' in list(event['params']['header'].keys()):
         if event['params']['header']['X-Git-Token'] in apikeys:
             secure = True
-    if 'X-Gitlab-Token' in event['params']['header'].keys():
+    if 'X-Gitlab-Token' in list(event['params']['header'].keys()):
         if event['params']['header']['X-Gitlab-Token'] in apikeys:
             secure = True
-    if 'X-Hub-Signature' in event['params']['header'].keys():
+    if 'X-Hub-Signature' in list(event['params']['header'].keys()):
         for k in apikeys:
             if 'use-sha256' in event['context']:
                 k1 = hmac.new(str(k), str(event['context']['raw-body']), hashlib.sha256).hexdigest()
@@ -280,7 +281,6 @@ def lambda_handler(event, context):
     except GitError as e:
         if "conflicts" in e.message:
             logger.info('Found repo conflicts, redownloading repo')
-            shutil.rmtree(repo_path)
             repo = create_repo(repo_path, remote_url, creds)
             pull_repo(repo, branch_name, remote_url, creds)
 

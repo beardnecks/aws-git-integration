@@ -354,7 +354,7 @@
             "Arn"
           ]
         },
-        "Runtime": "python2.7",
+        "Runtime": "python3.7",
         "Timeout": 300
       }
     },
@@ -494,7 +494,7 @@
             "Arn"
           ]
         },
-        "Runtime": "python2.7",
+        "Runtime": "python3.7",
         "Timeout": 300,
         "Environment": {
           "Variables": {
@@ -896,7 +896,7 @@
             "Arn"
           ]
         },
-        "Runtime": "python2.7",
+        "Runtime": "python3.7",
         "Timeout": 300,
         "CodeUri": "DeleteBucketContents/"
       }
