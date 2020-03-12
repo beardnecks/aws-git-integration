@@ -85,7 +85,7 @@ def pull_repo(repo, branch_name, remote_url, creds):
         remote = repo.create_remote('origin', remote_url)
     logger.info('Fetching and merging changes from %s branch %s', remote_url, branch_name)
     remote.fetch(callbacks=creds)
-    if (branch_name.startswith('tags/')):
+    if branch_name.startswith('tags/'):
         ref = 'refs/' + branch_name
     else:
         ref = 'refs/remotes/origin/' + branch_name
@@ -199,7 +199,7 @@ def lambda_handler(event, context):
 
     # Check if: Opened PR
     if pr:
-        if ('action' in event['body-json'] and event['body-json']['action'] != 'opened' and not push):
+        if 'action' in event['body-json'] and event['body-json']['action'] != 'opened' and not push:
             logger.error('PR action is not opened, it is %s' % event['body-json']['action'])
             raise Exception('PR action is not opened, it is %s' % event['body-json']['action'])
     # Check if PR to master
@@ -216,14 +216,14 @@ def lambda_handler(event, context):
     # Check if: Push to master.
     regex = re.compile("^refs/heads/master$")
     if push:
-        if ('ref' in event['body-json'] and not regex.match(event['body-json']['ref']) and not pr):
+        if 'ref' in event['body-json'] and not regex.match(event['body-json']['ref']) and not pr:
             logger.error('Push is not to master, it is to %s' % event['body-json']['ref'])
             raise Exception('Push is not to master it is to %s' % event['body-json']['ref'])
         else:
             prefix = "prod"
 
     # GitHub publish event
-    if ('action' in event['body-json'] and event['body-json']['action'] == 'published'):
+    if 'action' in event['body-json'] and event['body-json']['action'] == 'published':
         branch_name = 'tags/%s' % event['body-json']['release']['tag_name']
         repo_name = full_name + '/release'
     else:
