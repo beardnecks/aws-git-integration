@@ -11,7 +11,7 @@ The Quick Start includes an AWS CloudFormation template that automates the deplo
 ![Quick Start architecture for implementing webhooks on AWS](https://d0.awsstatic.com/partner-network/QuickStart/datasheets/git-to-s3-webhooks-architecture-on-aws.png)
 
 ## Deployment
-### Prerequisites
+Prerequisites:
 * [SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install-linux.html) (Installed)
 * [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/install-linux.html) (Installed and configured)
 * Python
