@@ -126,7 +126,8 @@ def lambda_handler(event, context):
     keybucket = event['context']['key-bucket']
     outputbucket = event['context']['output-bucket']
     pubkey = event['context']['public-key']
-    # Source IP ranges to allow requests from, if the IP is in one of these the request will not be chacked for an api key
+    # Source IP ranges to allow requests from,
+    # if the IP is in one of these the request will not be chacked for an api key
     ipranges = []
     for i in event['context']['allowed-ips'].split(','):
         ipranges.append(ip_network('%s' % i))
@@ -235,29 +236,30 @@ def lambda_handler(event, context):
             try:
                 # Bibucket server
                 branch_name = event['body-json']['push']['changes'][0]['new']['name']
-            except:
+            except Exception:
                 branch_name = 'master'
     try:
         # GitLab
         remote_url = event['body-json']['project']['git_ssh_url']
     except Exception:
         try:
-            remote_url = 'git@' + event['body-json']['repository']['links']['html']['href'].replace('https://',
-                                                                                                    '').replace('/',
-                                                                                                                ':',
-                                                                                                                1) + '.git'
-        except:
+            remote_url = 'git@' \
+                         + event['body-json']['repository']['links']['html']['href'].replace('https://',
+                                                                                             '').replace('/',
+                                                                                                         ':',
+                                                                                                         1) + '.git'
+        except Exception:
             try:
                 # GitHub
                 remote_url = event['body-json']['repository']['ssh_url']
-            except:
+            except Exception:
                 # Bitbucket
                 try:
                     for i, url in enumerate(event['body-json']['repository']['links']['clone']):
                         if url['name'] == 'ssh':
                             ssh_index = i
                     remote_url = event['body-json']['repository']['links']['clone'][ssh_index]['href']
-                except:
+                except Exception:
                     # BitBucket pull-request
                     for i, url in enumerate(
                             event['body-json']['pullRequest']['fromRef']['repository']['links']['clone']):
@@ -279,7 +281,7 @@ def lambda_handler(event, context):
     try:
         pull_repo(repo, branch_name, remote_url, creds)
     except GitError as e:
-        if "conflicts" in e.message:
+        if "conflicts" in e:
             logger.info('Found repo conflicts, redownloading repo')
             repo = create_repo(repo_path, remote_url, creds)
             pull_repo(repo, branch_name, remote_url, creds)
