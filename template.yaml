@@ -5,24 +5,24 @@
   "Metadata": {
     "AWS::CloudFormation::Interface": {
       "ParameterGroups": [
-        {
-          "Label": {
-            "default": "General Settings"
-          },
-          "Parameters": [
-            "OutputBucketName",
-            "CustomDomainName"
-          ]
+      {
+        "Label": {
+          "default": "General Settings"
         },
-        {
-          "Label": {
-            "default": "Git Pull Settings"
-          },
-          "Parameters": [
-            "ApiSecret",
-            "AllowedIps"
-          ]
-        }
+        "Parameters": [
+          "OutputBucketName",
+          "CustomDomainName"
+        ]
+      },
+      {
+        "Label": {
+          "default": "Git Pull Settings"
+        },
+        "Parameters": [
+          "ApiSecret",
+          "AllowedIps"
+        ]
+      }
       ],
       "ParameterLabels": {
         "AllowedIps": {
@@ -44,7 +44,7 @@
     "AllowedIps": {
       "Description": "gitpull method only. Comma seperated list of IP CIDR blocks for source IP authentication. The BitBucket Cloud IP ranges are provided as defaults.",
       "Type": "String",
-      "Default": "18.205.93.0/25,18.234.32.128/25,13.52.5.0/25"
+      "Default": "192.30.252.0/22,185.199.108.0/22,140.82.112.0/20,13.114.40.48/32,13.229.188.59/32,13.234.176.102/32,13.234.210.38/32,13.236.229.21/32,13.237.44.5/32,13.250.177.223/32,15.164.81.167/32,18.194.104.89/32,18.195.85.27/32,18.228.52.138/32,18.228.67.229/32,18.231.5.6/32,35.159.8.160/32,52.192.72.89/32,52.64.108.95/32,52.69.186.44/32,52.74.223.119/32,52.78.231.108/32"
     },
     "ApiSecret": {
       "Description": "gitpull method only. WebHook Secrets for use with GitHub Enterprise and GitLab. If a secret is matched IP range authentication is bypassed. Cannot contain: , \\ \"",
@@ -70,50 +70,50 @@
   "Conditions": {
     "UseAllowedIps": {
       "Fn::Not": [
+      {
+        "Fn::Equals": [
         {
-          "Fn::Equals": [
-            {
-              "Ref": "AllowedIps"
-            },
-            ""
-          ]
-        }
+          "Ref": "AllowedIps"
+        },
+        ""
+        ]
+      }
       ]
     },
     "UseApiSecret": {
       "Fn::Not": [
+      {
+        "Fn::Equals": [
         {
-          "Fn::Equals": [
-            {
-              "Ref": "ApiSecret"
-            },
-            ""
-          ]
-        }
+          "Ref": "ApiSecret"
+        },
+        ""
+        ]
+      }
       ]
     },
     "UseCustomDomain": {
       "Fn::Not": [
+      {
+        "Fn::Equals": [
         {
-          "Fn::Equals": [
-            {
-              "Ref": "CustomDomainName"
-            },
-            ""
-          ]
-        }
+          "Ref": "CustomDomainName"
+        },
+        ""
+        ]
+      }
       ]
     },
     "AutoGenOutputBucketName": {
       "Fn::Not": [
+      {
+        "Fn::Equals": [
         {
-          "Fn::Equals": [
-            {
-              "Ref": "OutputBucketName"
-            },
-            ""
-          ]
-        }
+          "Ref": "OutputBucketName"
+        },
+        ""
+        ]
+      }
       ]
     }
   },
@@ -151,100 +151,100 @@
         "KeyPolicy": {
           "Version": "2012-10-17",
           "Statement": [
-            {
-              "Sid": "Allow access for Key Administrators",
-              "Effect": "Allow",
-              "Principal": {
-                "AWS": [
-                  {
-                    "Fn::Join": [
-                      "",
-                      [
-                        "arn:aws:iam::",
-                        {
-                          "Ref": "AWS::AccountId"
-                        },
-                        ":root"
-                      ]
-                    ]
-                  }
+          {
+            "Sid": "Allow access for Key Administrators",
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": [
+              {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:iam::",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":root"
+                  ]
                 ]
-              },
-              "Action": [
-                "kms:Create*",
-                "kms:Describe*",
-                "kms:Enable*",
-                "kms:List*",
-                "kms:Put*",
-                "kms:Update*",
-                "kms:Revoke*",
-                "kms:Disable*",
-                "kms:Get*",
-                "kms:Delete*",
-                "kms:ScheduleKeyDeletion",
-                "kms:CancelKeyDeletion"
-              ],
-              "Resource": "*"
+              }
+              ]
             },
-            {
-              "Sid": "Allow use of the key",
-              "Effect": "Allow",
-              "Principal": {
-                "AWS": [
-                  {
-                    "Fn::Join": [
-                      "",
-                      [
-                        "arn:aws:iam::",
-                        {
-                          "Ref": "AWS::AccountId"
-                        },
-                        ":root"
-                      ]
-                    ]
-                  }
+            "Action": [
+              "kms:Create*",
+              "kms:Describe*",
+              "kms:Enable*",
+              "kms:List*",
+              "kms:Put*",
+              "kms:Update*",
+              "kms:Revoke*",
+              "kms:Disable*",
+              "kms:Get*",
+              "kms:Delete*",
+              "kms:ScheduleKeyDeletion",
+              "kms:CancelKeyDeletion"
+            ],
+            "Resource": "*"
+          },
+          {
+            "Sid": "Allow use of the key",
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": [
+              {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:iam::",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":root"
+                  ]
                 ]
-              },
-              "Action": [
-                "kms:Encrypt",
-                "kms:Decrypt",
-                "kms:ReEncrypt*",
-                "kms:GenerateDataKey*",
-                "kms:DescribeKey"
-              ],
-              "Resource": "*"
+              }
+              ]
             },
-            {
-              "Sid": "Allow attachment of persistent resources",
-              "Effect": "Allow",
-              "Principal": {
-                "AWS": [
-                  {
-                    "Fn::Join": [
-                      "",
-                      [
-                        "arn:aws:iam::",
-                        {
-                          "Ref": "AWS::AccountId"
-                        },
-                        ":root"
-                      ]
-                    ]
-                  }
+            "Action": [
+              "kms:Encrypt",
+              "kms:Decrypt",
+              "kms:ReEncrypt*",
+              "kms:GenerateDataKey*",
+              "kms:DescribeKey"
+            ],
+            "Resource": "*"
+          },
+          {
+            "Sid": "Allow attachment of persistent resources",
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": [
+              {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:iam::",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":root"
+                  ]
                 ]
-              },
-              "Action": [
-                "kms:CreateGrant",
-                "kms:ListGrants",
-                "kms:RevokeGrant"
-              ],
-              "Resource": "*",
-              "Condition": {
-                "Bool": {
-                  "kms:GrantIsForAWSResource": true
-                }
+              }
+              ]
+            },
+            "Action": [
+              "kms:CreateGrant",
+              "kms:ListGrants",
+              "kms:RevokeGrant"
+            ],
+            "Resource": "*",
+            "Condition": {
+              "Bool": {
+                "kms:GrantIsForAWSResource": true
               }
             }
+          }
           ]
         }
       }
@@ -255,90 +255,90 @@
         "AssumeRolePolicyDocument": {
           "Version": "2012-10-17",
           "Statement": [
-            {
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "lambda.amazonaws.com"
-              },
-              "Action": "sts:AssumeRole"
-            }
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "lambda.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+          }
           ]
         },
         "Path": "/",
         "Policies": [
-          {
-            "PolicyName": "git2cp-sshkeygen",
-            "PolicyDocument": {
-              "Version": "2012-10-17",
-              "Statement": [
-                {
-                  "Effect": "Allow",
-                  "Action": [
-                    "s3:GetObject"
-                  ],
-                  "Resource": [
+        {
+          "PolicyName": "git2cp-sshkeygen",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:GetObject"
+              ],
+              "Resource": [
+              {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:s3:::",
                     {
-                      "Fn::Join": [
-                        "",
-                        [
-                          "arn:aws:s3:::",
-                          {
-                            "Ref": "KeyBucket"
-                          },
-                          "/crypto.zip"
-                        ]
-                      ]
-                    }
+                      "Ref": "KeyBucket"
+                    },
+                    "/crypto.zip"
                   ]
-                },
-                {
-                  "Effect": "Allow",
-                  "Action": [
-                    "s3:PutObject"
-                  ],
-                  "Resource": [
+                ]
+              }
+              ]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:PutObject"
+              ],
+              "Resource": [
+              {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:s3:::",
                     {
-                      "Fn::Join": [
-                        "",
-                        [
-                          "arn:aws:s3:::",
-                          {
-                            "Ref": "KeyBucket"
-                          },
-                          "/enc_key"
-                        ]
-                      ]
-                    }
+                      "Ref": "KeyBucket"
+                    },
+                    "/enc_key"
                   ]
-                },
-                {
-                  "Effect": "Allow",
-                  "Action": [
-                    "kms:Encrypt"
-                  ],
-                  "Resource": [
-                    {
-                      "Fn::GetAtt": [
-                        "KMSKey",
-                        "Arn"
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "Effect": "Allow",
-                  "Action": [
-                    "logs:CreateLogGroup",
-                    "logs:CreateLogStream",
-                    "logs:PutLogEvents"
-                  ],
-                  "Resource": [
-                    "arn:aws:logs:*:*:*"
-                  ]
-                }
+                ]
+              }
+              ]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "kms:Encrypt"
+              ],
+              "Resource": [
+              {
+                "Fn::GetAtt": [
+                  "KMSKey",
+                  "Arn"
+                ]
+              }
+              ]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+              ],
+              "Resource": [
+                "arn:aws:logs:*:*:*"
               ]
             }
+            ]
           }
+        }
         ]
       }
     },
@@ -385,101 +385,101 @@
         "AssumeRolePolicyDocument": {
           "Version": "2012-10-17",
           "Statement": [
-            {
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "lambda.amazonaws.com"
-              },
-              "Action": "sts:AssumeRole"
-            }
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "lambda.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+          }
           ]
         },
         "Path": "/",
         "Policies": [
-          {
-            "PolicyName": "git2cp-gitpull",
-            "PolicyDocument": {
-              "Version": "2012-10-17",
-              "Statement": [
-                {
-                  "Effect": "Allow",
-                  "Action": [
-                    "kms:Decrypt"
-                  ],
-                  "Resource": [
+        {
+          "PolicyName": "git2cp-gitpull",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "kms:Decrypt"
+              ],
+              "Resource": [
+              {
+                "Fn::GetAtt": [
+                  "KMSKey",
+                  "Arn"
+                ]
+              }
+              ]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:PutObject"
+              ],
+              "Resource": [
+              {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:s3:::",
                     {
-                      "Fn::GetAtt": [
-                        "KMSKey",
-                        "Arn"
-                      ]
+                      "Ref": "OutputBucket"
                     }
                   ]
-                },
-                {
-                  "Effect": "Allow",
-                  "Action": [
-                    "s3:PutObject"
-                  ],
-                  "Resource": [
+                ]
+              },
+              {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:s3:::",
                     {
-                      "Fn::Join": [
-                        "",
-                        [
-                          "arn:aws:s3:::",
-                          {
-                            "Ref": "OutputBucket"
-                          }
-                        ]
-                      ]
+                      "Ref": "OutputBucket"
                     },
+                    "/*"
+                  ]
+                ]
+              }
+              ]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:GetObject"
+              ],
+              "Resource": [
+              {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:s3:::",
                     {
-                      "Fn::Join": [
-                        "",
-                        [
-                          "arn:aws:s3:::",
-                          {
-                            "Ref": "OutputBucket"
-                          },
-                          "/*"
-                        ]
-                      ]
-                    }
+                      "Ref": "KeyBucket"
+                    },
+                    "/enc_key"
                   ]
-                },
-                {
-                  "Effect": "Allow",
-                  "Action": [
-                    "s3:GetObject"
-                  ],
-                  "Resource": [
-                    {
-                      "Fn::Join": [
-                        "",
-                        [
-                          "arn:aws:s3:::",
-                          {
-                            "Ref": "KeyBucket"
-                          },
-                          "/enc_key"
-                        ]
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "Effect": "Allow",
-                  "Action": [
-                    "logs:CreateLogGroup",
-                    "logs:CreateLogStream",
-                    "logs:PutLogEvents"
-                  ],
-                  "Resource": [
-                    "arn:aws:logs:*:*:*"
-                  ]
-                }
+                ]
+              }
+              ]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+              ],
+              "Resource": [
+                "arn:aws:logs:*:*:*"
               ]
             }
+            ]
           }
+        }
         ]
       }
     },
@@ -510,13 +510,13 @@
         "AssumeRolePolicyDocument": {
           "Version": "2012-10-17",
           "Statement": [
-            {
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "apigateway.amazonaws.com"
-              },
-              "Action": "sts:AssumeRole"
-            }
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "apigateway.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+          }
           ]
         },
         "Path": "/",
@@ -524,29 +524,29 @@
           "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
         ],
         "Policies": [
-          {
-            "PolicyName": "git2cp-webhook",
-            "PolicyDocument": {
-              "Version": "2012-10-17",
-              "Statement": [
-                {
-                  "Effect": "Allow",
-                  "Action": [
-                    "lambda:InvokeAsync",
-                    "lambda:InvokeFunction"
-                  ],
-                  "Resource": [
-                    {
-                      "Fn::GetAtt": [
-                        "GitPullLambda",
-                        "Arn"
-                      ]
-                    }
-                  ]
-                }
+        {
+          "PolicyName": "git2cp-webhook",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "lambda:InvokeAsync",
+                "lambda:InvokeFunction"
+              ],
+              "Resource": [
+              {
+                "Fn::GetAtt": [
+                  "GitPullLambda",
+                  "Arn"
+                ]
+              }
               ]
             }
+            ]
           }
+        }
         ]
       }
     },
@@ -798,90 +798,90 @@
         "AssumeRolePolicyDocument": {
           "Version": "2012-10-17",
           "Statement": [
-            {
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "lambda.amazonaws.com"
-              },
-              "Action": "sts:AssumeRole"
-            }
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "lambda.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+          }
           ]
         },
         "Path": "/",
         "Policies": [
-          {
-            "PolicyName": "git2cp-deletebucketcontents",
-            "PolicyDocument": {
-              "Version": "2012-10-17",
-              "Statement": [
-                {
-                  "Effect": "Allow",
-                  "Action": [
-                    "s3:*"
-                  ],
-                  "Resource": [
+        {
+          "PolicyName": "git2cp-deletebucketcontents",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:*"
+              ],
+              "Resource": [
+              {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:s3:::",
                     {
-                      "Fn::Join": [
-                        "",
-                        [
-                          "arn:aws:s3:::",
-                          {
-                            "Ref": "KeyBucket"
-                          },
-                          "/*"
-                        ]
-                      ]
+                      "Ref": "KeyBucket"
                     },
+                    "/*"
+                  ]
+                ]
+              },
+              {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:s3:::",
                     {
-                      "Fn::Join": [
-                        "",
-                        [
-                          "arn:aws:s3:::",
-                          {
-                            "Ref": "OutputBucket"
-                          },
-                          "/*"
-                        ]
-                      ]
+                      "Ref": "OutputBucket"
                     },
+                    "/*"
+                  ]
+                ]
+              },
+              {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:s3:::",
                     {
-                      "Fn::Join": [
-                        "",
-                        [
-                          "arn:aws:s3:::",
-                          {
-                            "Ref": "KeyBucket"
-                          }
-                        ]
-                      ]
-                    },
-                    {
-                      "Fn::Join": [
-                        "",
-                        [
-                          "arn:aws:s3:::",
-                          {
-                            "Ref": "OutputBucket"
-                          }
-                        ]
-                      ]
+                      "Ref": "KeyBucket"
                     }
                   ]
-                },
-                {
-                  "Effect": "Allow",
-                  "Action": [
-                    "logs:CreateLogGroup",
-                    "logs:CreateLogStream",
-                    "logs:PutLogEvents"
-                  ],
-                  "Resource": [
-                    "arn:aws:logs:*:*:*"
+                ]
+              },
+              {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:s3:::",
+                    {
+                      "Ref": "OutputBucket"
+                    }
                   ]
-                }
+                ]
+              }
+              ]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+              ],
+              "Resource": [
+                "arn:aws:logs:*:*:*"
               ]
             }
+            ]
           }
+        }
         ]
       }
     },
@@ -968,14 +968,14 @@
                   "Fn::Join": [
                     "",
                     [
-                      {
-                        "Ref": "WebHookApi"
-                      },
-                      ".execute-api.",
-                      {
-                        "Ref": "AWS::Region"
-                      },
-                      ".amazonaws.com"
+                    {
+                      "Ref": "WebHookApi"
+                    },
+                    ".execute-api.",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ".amazonaws.com"
                     ]
                   ]
                 }
