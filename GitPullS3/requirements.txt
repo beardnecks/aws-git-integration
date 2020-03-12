@@ -2,7 +2,7 @@
 # https://github.com/damnever/pigar
 
 # lambda_function.py: 9
-boto3 == 1.9.253
+boto3 == 1.10.34
 
 # lambda_function.py: 14
 ipaddress == 1.0.23

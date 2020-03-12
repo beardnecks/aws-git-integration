@@ -2,10 +2,9 @@
 # https://github.com/damnever/pigar
 
 # lambda_function.py: 10
-boto3 == 1.9.253
-
-# lambda_function.py: 8
-cfnresponse == 1.0.2
+boto3 == 1.10.34
 
 # lambda_function.py: 11,12,13
 cryptography == 2.8
+
+requests == 2.23.0
