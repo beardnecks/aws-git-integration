@@ -10,7 +10,6 @@ import hashlib
 import hmac
 import logging
 import os
-
 # Regex
 import re
 import shutil
@@ -127,19 +126,9 @@ def push_s3(filename, repo_name, prefix, outputbucket):
     logger.info("Completed S3 upload...")
 
 
-def lambda_handler(event, context):
-    print(event)  # TODO: Remove debug
-    keybucket = event["context"]["key-bucket"]
-    outputbucket = event["context"]["output-bucket"]
-    pubkey = event["context"]["public-key"]
-    # Source IP ranges to allow requests from,
-    # if the IP is in one of these the request will not be chacked for an api key
-    ipranges = []
-    for i in event["context"]["allowed-ips"].split(","):
-        ipranges.append(ip_network("%s" % i))
-    # APIKeys, it is recommended to use a different API key for each repo that uses this function
-    apikeys = event["context"]["api-secrets"].split(",")
-    ip = ip_address(event["context"]["source-ip"])
+def github_event(event: dict):
+    full_name = event["body-json"]["repository"]["full_name"]
+
     # Check if it is a pull request(PR) or not.
     pr = False
     # Unsure wether this if statement works or not, must be tested.
@@ -151,6 +140,92 @@ def lambda_handler(event, context):
     # Unsure wether this if statement works or not, must be tested.
     if event["params"]["header"]["X-GitHub-Event"] == "push":
         push = True
+
+    # Check if there is PR or a push
+    if not (pr or push):
+        logger.error("This is not a Pull Request or a Push")
+        raise Exception("This is not a Pull Request or a Push")
+
+    # Check if: Opened PR
+    if pr:
+        if (
+            "action" in event["body-json"]
+            and event["body-json"]["action"] != "opened"
+            and not push
+        ):
+            logger.error(
+                "PR action is not opened, it is %s" % event["body-json"]["action"]
+            )
+            raise Exception(
+                "PR action is not opened, it is %s" % event["body-json"]["action"]
+            )
+    # Check if PR to master
+    # Regex object, string that starts with master, widlcard after. (master*)
+    regex = re.compile("^master")
+    if pr:
+        if "base" in event["body-json"]["pull_request"] and not regex.match(
+            event["body-json"]["pull_request"]["base"]["ref"]
+        ):
+            logger.error(
+                "PR is not to master, it is %s"
+                % event["body-json"]["pull_request"]["base"]["ref"]
+            )
+            raise Exception(
+                "PR is not to master, it is %s"
+                % event["body-json"]["pull_request"]["base"]["ref"]
+            )
+        else:
+            prefix = "dev"
+
+    # Check if: Push to master.
+    regex = re.compile("^refs/heads/master$")
+    if push:
+        if (
+            "ref" in event["body-json"]
+            and not regex.match(event["body-json"]["ref"])
+            and not pr
+        ):
+            logger.error(
+                "Push is not to master, it is to %s" % event["body-json"]["ref"]
+            )
+            raise Exception(
+                "Push is not to master it is to %s" % event["body-json"]["ref"]
+            )
+        else:
+            prefix = "prod"
+
+    # GitHub publish event
+    repo_name = full_name
+    try:
+        # branch names should contain [name] only, tag names - "tags/[name]"
+        branch_name = (
+            event["body-json"]["ref"]
+            .replace("refs/heads/", "")
+            .replace("refs/tags/", "tags/")
+        )
+    except KeyError:
+        branch_name = "master"
+
+    remote_url = event["body-json"]["repository"]["ssh_url"]
+
+    return remote_url, prefix, repo_name
+
+
+def lambda_handler(event: dict, context):
+    print(type(event))
+    print(event)  # TODO: Remove debug
+    keybucket = event["context"]["key-bucket"]
+    outputbucket = event["context"]["output-bucket"]
+    pubkey = event["context"]["public-key"]
+
+    # Source IP ranges to allow requests from,
+    # if the IP is in one of these the request will not be chacked for an api key
+    ipranges = []
+    for i in event["context"]["allowed-ips"].split(","):
+        ipranges.append(ip_network("%s" % i))
+    # APIKeys, it is recommended to use a different API key for each repo that uses this function
+    apikeys = event["context"]["api-secrets"].split(",")
+    ip = ip_address(event["context"]["source-ip"])
 
     secure = False
     for net in ipranges:
@@ -209,118 +284,52 @@ def lambda_handler(event, context):
         logger.error("Source IP %s is not allowed" % event["context"]["source-ip"])
         raise Exception("Source IP %s is not allowed" % event["context"]["source-ip"])
 
-    # Check if there is PR or a push
-    if not (pr or push):
-        logger.error("This is not a Pull Request or a Push")
-        raise Exception("This is not a Pull Request or a Push")
+    if "GitHub" in event["params"]["header"]["User-Agent"]:
+        remote_url, prefix, repo_name = github_event(event)
+    elif "Bitbucket" in event["params"]["header"]["User-Agent"]:
+        print("Bitbucket event")
 
-    # Check if: Opened PR
-    if pr:
-        if (
-            "action" in event["body-json"]
-            and event["body-json"]["action"] != "opened"
-            and not push
-        ):
-            logger.error(
-                "PR action is not opened, it is %s" % event["body-json"]["action"]
-            )
-            raise Exception(
-                "PR action is not opened, it is %s" % event["body-json"]["action"]
-            )
-    # Check if PR to master
-    # Regex object, string that starts with master, widlcard after. (master*)
-    regex = re.compile("^master")
-    if pr:
-        if "base" in event["body-json"]["pull_request"] and not regex.match(
-            event["body-json"]["pull_request"]["base"]["ref"]
-        ):
-            logger.error(
-                "PR is not to master, it is %s"
-                % event["body-json"]["pull_request"]["base"]["ref"]
-            )
-            raise Exception(
-                "PR is not to master, it is %s"
-                % event["body-json"]["pull_request"]["base"]["ref"]
-            )
-        else:
-            prefix = "dev"
+    # try:
+    #     # GitLab
+    #     remote_url = event["body-json"]["project"]["git_ssh_url"]
+    # except Exception:
+    #     try:
+    #         remote_url = (
+    #                 "git@"
+    #                 + event["body-json"]["repository"]["links"]["html"]["href"]
+    #                 .replace("https://", "")
+    #                 .replace("/", ":", 1)
+    #                 + ".git"
+    #         )
+    #     except Exception:
+    #         try:
+    #             # GitHub
+    #             remote_url = event["body-json"]["repository"]["ssh_url"]
+    #         except Exception:
+    #             # Bitbucket
+    #             try:
+    #                 for i, url in enumerate(
+    #                         event["body-json"]["repository"]["links"]["clone"]
+    #                 ):
+    #                     if url["name"] == "ssh":
+    #                         ssh_index = i
+    #                 remote_url = event["body-json"]["repository"]["links"]["clone"][
+    #                     ssh_index
+    #                 ]["href"]
+    #             except Exception:
+    #                 # BitBucket pull-request
+    #                 for i, url in enumerate(
+    #                         event["body-json"]["pullRequest"]["fromRef"]["repository"][
+    #                             "links"
+    #                         ]["clone"]
+    #                 ):
+    #                     if url["name"] == "ssh":
+    #                         ssh_index = i
+    #
+    #                 remote_url = event["body-json"]["pullRequest"]["fromRef"][
+    #                     "repository"
+    #                 ]["links"]["clone"][ssh_index]["href"]
 
-    # Check if: Push to master.
-    regex = re.compile("^refs/heads/master$")
-    if push:
-        if (
-            "ref" in event["body-json"]
-            and not regex.match(event["body-json"]["ref"])
-            and not pr
-        ):
-            logger.error(
-                "Push is not to master, it is to %s" % event["body-json"]["ref"]
-            )
-            raise Exception(
-                "Push is not to master it is to %s" % event["body-json"]["ref"]
-            )
-        else:
-            prefix = "prod"
-
-    # GitHub publish event
-    if "action" in event["body-json"] and event["body-json"]["action"] == "published":
-        branch_name = "tags/%s" % event["body-json"]["release"]["tag_name"]
-        repo_name = full_name + "/release"
-    else:
-        repo_name = full_name
-        try:
-            # branch names should contain [name] only, tag names - "tags/[name]"
-            branch_name = (
-                event["body-json"]["ref"]
-                .replace("refs/heads/", "")
-                .replace("refs/tags/", "tags/")
-            )
-        except KeyError:
-            try:
-                # Bibucket server
-                branch_name = event["body-json"]["push"]["changes"][0]["new"]["name"]
-            except Exception:
-                branch_name = "master"
-    try:
-        # GitLab
-        remote_url = event["body-json"]["project"]["git_ssh_url"]
-    except Exception:
-        try:
-            remote_url = (
-                "git@"
-                + event["body-json"]["repository"]["links"]["html"]["href"]
-                .replace("https://", "")
-                .replace("/", ":", 1)
-                + ".git"
-            )
-        except Exception:
-            try:
-                # GitHub
-                remote_url = event["body-json"]["repository"]["ssh_url"]
-            except Exception:
-                # Bitbucket
-                try:
-                    for i, url in enumerate(
-                        event["body-json"]["repository"]["links"]["clone"]
-                    ):
-                        if url["name"] == "ssh":
-                            ssh_index = i
-                    remote_url = event["body-json"]["repository"]["links"]["clone"][
-                        ssh_index
-                    ]["href"]
-                except Exception:
-                    # BitBucket pull-request
-                    for i, url in enumerate(
-                        event["body-json"]["pullRequest"]["fromRef"]["repository"][
-                            "links"
-                        ]["clone"]
-                    ):
-                        if url["name"] == "ssh":
-                            ssh_index = i
-
-                    remote_url = event["body-json"]["pullRequest"]["fromRef"][
-                        "repository"
-                    ]["links"]["clone"][ssh_index]["href"]
     repo_path = "/tmp/%s" % repo_name
     # creds = RemoteCallbacks(credentials=get_keys(keybucket, pubkey), )
     get_keys(keybucket, pubkey)
