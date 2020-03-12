@@ -947,14 +947,6 @@
         "Ref": "CreateSSHKey"
       }
     },
-    "Test": {
-      "Value": {
-        "Fn::GetAtt": [
-          "CreateSSHKeyLambda",
-          "Arn"
-        ]
-      }
-    },
     "GitPullWebHookApi": {
       "Value": {
         "Fn::Join": [
