@@ -5,7 +5,6 @@
 #  This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or implied.
 #  See the License for the specific language governing permissions and limitations under the License.
 
-from pygit2 import Keypair, discover_repository, Repository, clone_repository, RemoteCallbacks, GitError
 from boto3 import client
 import os
 import stat
@@ -18,13 +17,10 @@ import hashlib
 import distutils.util
 # Regex
 import re
+from git import Repo, exc, Remote
 
 # If true the function will not include .git folder in the zip
 exclude_git = bool(distutils.util.strtobool(os.environ['ExcludeGit']))
-
-# If true the function will delete all files at the end of each invocation, useful if you run into storage space
-# constraints, but will slow down invocations as each invoke will need to checkout the entire repo
-cleanup = False
 
 key = 'enc_key'
 
@@ -58,7 +54,6 @@ def get_keys(keybucket, pubkey, update=False):
         privkey = kms.decrypt(CiphertextBlob=enckey)['Plaintext']
         write_key('/tmp/id_rsa', privkey)
         write_key('/tmp/id_rsa.pub', str.encode(pubkey))
-    return Keypair('git', '/tmp/id_rsa.pub', '/tmp/id_rsa', '')
 
 
 def init_remote(repo, name, url):
@@ -70,7 +65,7 @@ def create_repo(repo_path, remote_url, creds):
     if os.path.exists(repo_path):
         logger.info('Cleaning up repo path...')
         shutil.rmtree(repo_path)
-    repo = clone_repository(remote_url, repo_path, callbacks=creds)
+    repo = Repo.clone_from(remote_url, repo_path, depth=1)
 
     return repo
 
@@ -269,29 +264,19 @@ def lambda_handler(event, context):
                     remote_url = \
                         event['body-json']['pullRequest']['fromRef']['repository']['links']['clone'][ssh_index]['href']
     repo_path = '/tmp/%s' % repo_name
-    creds = RemoteCallbacks(credentials=get_keys(keybucket, pubkey), )
+    # creds = RemoteCallbacks(credentials=get_keys(keybucket, pubkey), )
+    get_keys(keybucket, pubkey)
+    git_ssh_cmd = 'ssh -i /tmp/id_rsa -o StrictHostKeyChecking=no'
     try:
-        repository_path = discover_repository(repo_path)
-        repo = Repository(repository_path)
-        logger.info('found existing repo, using that...')
-    except Exception:
-        logger.info('creating new repo for %s in %s' % (remote_url, repo_path))
-        repo = create_repo(repo_path, remote_url, creds)
-
-    try:
-        pull_repo(repo, branch_name, remote_url, creds)
-    except GitError as e:
-        if "conflicts" in e:
-            logger.info('Found repo conflicts, redownloading repo')
-            repo = create_repo(repo_path, remote_url, creds)
-            pull_repo(repo, branch_name, remote_url, creds)
-
+        logger.info('Cloning repository from %s' % remote_url)
+        Repo.clone_from(remote_url, repo_path, depth=1, env=dict(GIT_SSH_COMMAND=git_ssh_cmd))
+    except (exc.NoSuchPathError, exc.InvalidGitRepositoryError) as e:
+        logger.error('Error pulling new repo for %s in %s' % (remote_url, repo_path))
     zipfile = zip_repo(repo_path, repo_name)
     push_s3(zipfile, repo_name, prefix, outputbucket)
-    if cleanup:
-        logger.info('Cleanup Lambda container...')
-        shutil.rmtree(repo_path)
-        os.remove(zipfile)
-        os.remove('/tmp/id_rsa')
-        os.remove('/tmp/id_rsa.pub')
+    logger.info('Cleanup Lambda container...')
+    shutil.rmtree(repo_path)
+    os.remove(zipfile)
+    os.remove('/tmp/id_rsa')
+    os.remove('/tmp/id_rsa.pub')
     return 'Successfully updated %s' % repo_name
