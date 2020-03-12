@@ -5,13 +5,16 @@
 #  This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or implied.
 #  See the License for the specific language governing permissions and limitations under the License.
 
-import traceback
-import boto3
-from cryptography.hazmat.primitives import serialization as crypto_serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.backends import default_backend as crypto_default_backend
-import requests
 import json
+import traceback
+
+import boto3
+import requests
+from cryptography.hazmat.backends import \
+    default_backend as crypto_default_backend
+from cryptography.hazmat.primitives import \
+    serialization as crypto_serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 
 def lambda_handler(event, context):
