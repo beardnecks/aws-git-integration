@@ -5,19 +5,20 @@
 #  This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or implied.
 #  See the License for the specific language governing permissions and limitations under the License.
 
-from boto3 import client
-import os
-import stat
-import shutil
-from zipfile import ZipFile
-from ipaddress import ip_network, ip_address
-import logging
-import hmac
-import hashlib
 import distutils.util
+import hashlib
+import hmac
+import logging
+import os
 # Regex
 import re
-from git import Repo, exc, Remote
+import shutil
+import stat
+from ipaddress import ip_address, ip_network
+from zipfile import ZipFile
+
+from boto3 import client
+from git import Remote, Repo, exc
 
 # If true the function will not include .git folder in the zip
 exclude_git = bool(distutils.util.strtobool(os.environ['ExcludeGit']))
@@ -61,7 +62,7 @@ def init_remote(repo, name, url):
     return remote
 
 
-def create_repo(repo_path, remote_url, creds):
+def create_repo(repo_path, remote_url):
     if os.path.exists(repo_path):
         logger.info('Cleaning up repo path...')
         shutil.rmtree(repo_path)
@@ -70,7 +71,7 @@ def create_repo(repo_path, remote_url, creds):
     return repo
 
 
-def pull_repo(repo, branch_name, remote_url, creds):
+def pull_repo(repo, branch_name, remote_url):
     remote_exists = False
     for r in repo.remotes:
         if r.url == remote_url:
@@ -79,7 +80,7 @@ def pull_repo(repo, branch_name, remote_url, creds):
     if not remote_exists:
         remote = repo.create_remote('origin', remote_url)
     logger.info('Fetching and merging changes from %s branch %s', remote_url, branch_name)
-    remote.fetch(callbacks=creds)
+    remote.fetch()
     if branch_name.startswith('tags/'):
         ref = 'refs/' + branch_name
     else:
@@ -118,6 +119,7 @@ def push_s3(filename, repo_name, prefix, outputbucket):
 
 
 def lambda_handler(event, context):
+    print(event)  # TODO: Remove debug
     keybucket = event['context']['key-bucket']
     outputbucket = event['context']['output-bucket']
     pubkey = event['context']['public-key']
@@ -161,7 +163,7 @@ def lambda_handler(event, context):
                 k2 = str(event['params']['header']['X-Hub-Signature'].replace('sha1=', ''))
             if k1 == k2:
                 secure = True
-    # TODO: Add the ability to clone TFS repo using SSH keys
+
     try:
         # GitHub
         full_name = event['body-json']['repository']['full_name']
