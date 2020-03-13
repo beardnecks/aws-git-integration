@@ -73,9 +73,10 @@ def get_ips():
             s3.download_file(ip_bucket, "ips", "/tmp/ips")
         except Exception as e:
             lambda_client = client("lambda")
-            lambda_client.invoke(FunctionName="")
+            lambda_client.invoke(
+                FunctionName=ip_lambda, InvocationType="RequestResponse", Payload=b"{}"
+            )
             s3.download_file(ip_bucket, "ips", "/tmp/ips")
-
 
 
 def init_remote(repo, name, url):
