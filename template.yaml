@@ -141,6 +141,12 @@
         "Tags": []
       }
     },
+    "IPBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "Tags": []
+      }
+    },
     "OutputBucket": {
       "Type": "AWS::S3::Bucket",
       "Properties": {
@@ -288,26 +294,6 @@
           "PolicyDocument": {
             "Version": "2012-10-17",
             "Statement": [
-            {
-              "Effect": "Allow",
-              "Action": [
-                "s3:GetObject"
-              ],
-              "Resource": [
-              {
-                "Fn::Join": [
-                  "",
-                  [
-                    "arn:aws:s3:::",
-                    {
-                      "Ref": "KeyBucket"
-                    },
-                    "/crypto.zip"
-                  ]
-                ]
-              }
-              ]
-            },
             {
               "Effect": "Allow",
               "Action": [
@@ -954,7 +940,101 @@
           "Ref": "OutputBucket"
         }
       }
-    }
+    },
+    "FindGitPublicIPsRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "lambda.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+          }
+          ]
+        },
+        "Path": "/",
+        "Policies": [
+        {
+          "PolicyName": "git2cp-sshkeygen",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:PutObject"
+              ],
+              "Resource": [
+              {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:s3:::",
+                    {
+                      "Ref": "IPBucket"
+                    },
+                    "/ips"
+                  ]
+                ]
+              }
+              ]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+              ],
+              "Resource": [
+                "arn:aws:logs:*:*:*"
+              ]
+            }
+            ]
+          }
+        }
+        ]
+      }
+    },
+    "FindGitPublicIPsLambda": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "CodeUri": "FindGitPublicIPs/",
+        "Handler": "lambda_function.lambda_handler",
+        "MemorySize": 128,
+        "Runtime": "python3.7",
+        "Timeout": 300,
+        "Role": {
+          "Fn::GetAtt": [
+            "FindGitPublicIPsRole",
+            "Arn"
+          ]
+        },
+      }
+    },
+    "FindGitPublicIPs": {
+      "Type": "AWS::CloudFormation::CustomResource",
+      "Version": "1.0",
+      "DependsOn": [
+        "IPBucket",
+        "FindGitPublicIPsLambda"
+      ],
+      "Properties": {
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "FindGitPublicIPsLambda",
+            "Arn"
+          ]
+        },
+        "IPBucket": {
+          "Ref": "IPBucket"
+        }
+      }
+    },
   },
   "Outputs": {
     "CustomDomainNameCNAME": {
