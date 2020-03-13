@@ -303,11 +303,14 @@ def lambda_handler(event: dict, context):
     keybucket = event["context"]["key-bucket"]
     outputbucket = event["context"]["output-bucket"]
     pubkey = event["context"]["public-key"]
+    ipbucket = event["context"]["ip-bucket"]
 
+    get_ips(ipbucket)
+    f = open("/tmp/ips", "r")
     # Source IP ranges to allow requests from,
     # if the IP is in one of these the request will not be chacked for an api key
     ipranges = []
-    for i in event["context"]["allowed-ips"].split(","):
+    for i in f.read().split(","):
         ipranges.append(ip_network("%s" % i))
     # APIKeys, it is recommended to use a different API key for each repo that uses this function
     apikeys = event["context"]["api-secrets"].split(",")
