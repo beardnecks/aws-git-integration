@@ -365,7 +365,6 @@
       "Type": "AWS::CloudFormation::CustomResource",
       "Version": "1.0",
       "DependsOn": [
-        "CreateSSHKeyLambda",
         "KeyBucket",
         "KMSKey"
       ],
@@ -710,6 +709,7 @@
                           {
                             "Ref": "KeyBucket"
                           },
+                          "\",\n",
                           "    \"ip-bucket\" : \"",
                           {
                             "Ref": "IPBucket"
@@ -873,6 +873,18 @@
                   [
                     "arn:aws:s3:::",
                     {
+                      "Ref": "IPBucket"
+                    },
+                    "/*"
+                  ]
+                ]
+              },
+              {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:s3:::",
+                    {
                       "Ref": "KeyBucket"
                     },
                     "/*"
@@ -888,6 +900,17 @@
                       "Ref": "OutputBucket"
                     },
                     "/*"
+                  ]
+                ]
+              },
+              {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:s3:::",
+                    {
+                      "Ref": "IPBucket"
+                    }
                   ]
                 ]
               },
@@ -1046,6 +1069,13 @@
             "Arn"
           ]
         },
+        "Environment": {
+          "Variables": {
+            "IPBucket": {
+              "Ref": "IPBucket"
+            }
+          }
+        }
       }
     }
   },
