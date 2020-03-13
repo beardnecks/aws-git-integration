@@ -35,6 +35,26 @@ def lambda_handler(event, context):
                         ]
                     },
                 )
+            # Delete IPBucket contents
+            print()
+            "Getting KeyBucket objects..."
+            s3objects = s3.list_objects_v2(
+                Bucket=event["ResourceProperties"]["IPBucket"]
+            )
+            if "Contents" in list(s3objects.keys()):
+                print()
+                "Deleting IPBucket objects %s..." % str(
+                    [{"Key": key["Key"]} for key in s3objects["Contents"]]
+                )
+                s3.delete_objects(
+                    Bucket=event["ResourceProperties"]["IPBucket"],
+                    Delete={
+                        "Objects": [
+                            {"Key": key["Key"]} for key in s3objects["Contents"]
+                        ]
+                    },
+                )
+
             # Delete Output bucket contents and versions
             print()
             "Getting OutputBucket objects..."
