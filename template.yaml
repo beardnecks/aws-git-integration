@@ -358,12 +358,17 @@
           ]
         },
         "Runtime": "python3.7",
-        "Timeout": 300
+        "Timeout": 120
       }
     },
     "CreateSSHKey": {
       "Type": "AWS::CloudFormation::CustomResource",
       "Version": "1.0",
+      "DependsOn": [
+        "CreateSSHKeyLambda",
+        "KeyBucket",
+        "KMSKey"
+      ],
       "Properties": {
         "ServiceToken": {
           "Fn::GetAtt": [
@@ -404,6 +409,20 @@
           "PolicyDocument": {
             "Version": "2012-10-17",
             "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "lambda:InvokeFunction"
+              ],
+              "Resource": [
+              {
+                "Fn::GetAtt": [
+                  "FindGitPublicIPsLambda",
+                  "Arn"
+                ]
+              }
+              ]
+            },
             {
               "Effect": "Allow",
               "Action": [
@@ -501,7 +520,13 @@
         "Timeout": 300,
         "Environment": {
           "Variables": {
-            "ExcludeGit": "False"
+            "ExcludeGit": "False",
+            "IPBucket": {
+              "Ref": "IPBucket"
+            },
+            "IPLambda": {
+              "Ref": "FindGitPublicIPsLambda"
+            }
           }
         },
         "CodeUri": "GitPullS3/",
@@ -942,6 +967,9 @@
         },
         "OutputBucket": {
           "Ref": "OutputBucket"
+        },
+        "IPBucket": {
+          "Ref": "IPBucket"
         }
       }
     },
@@ -1011,7 +1039,7 @@
         "Handler": "lambda_function.lambda_handler",
         "MemorySize": 128,
         "Runtime": "python3.7",
-        "Timeout": 300,
+        "Timeout": 30,
         "Role": {
           "Fn::GetAtt": [
             "FindGitPublicIPsRole",
@@ -1019,26 +1047,7 @@
           ]
         },
       }
-    },
-    "FindGitPublicIPs": {
-      "Type": "AWS::CloudFormation::CustomResource",
-      "Version": "1.0",
-      "DependsOn": [
-        "IPBucket",
-        "FindGitPublicIPsLambda"
-      ],
-      "Properties": {
-        "ServiceToken": {
-          "Fn::GetAtt": [
-            "FindGitPublicIPsLambda",
-            "Arn"
-          ]
-        },
-        "IPBucket": {
-          "Ref": "IPBucket"
-        }
-      }
-    },
+    }
   },
   "Outputs": {
     "CustomDomainNameCNAME": {
