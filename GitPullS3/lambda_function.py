@@ -63,6 +63,12 @@ def get_keys(keybucket, pubkey, update=False):
         write_key("/tmp/id_rsa.pub", str.encode(pubkey))
 
 
+def get_ips(ipbucket):
+    if not os.path.isfile("/tmp/ips"):
+        logger.info("IPs not found on lambda container, fetching from s3...")
+        s3.downlaod_file(ipbucket, "ips", "/tmp/ips")
+
+
 def init_remote(repo, name, url):
     remote = repo.remotes.create(name, url, "+refs/*:refs/*")
     return remote
