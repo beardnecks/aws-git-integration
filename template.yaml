@@ -410,17 +410,13 @@
             "Statement": [
             {
               "Effect": "Allow",
-              "Action": [
-                "lambda:InvokeFunction"
-              ],
-              "Resource": [
-              {
+              "Action": "lambda:InvokeFunction",
+              "Resource": {
                 "Fn::GetAtt": [
                   "FindGitPublicIPsLambda",
                   "Arn"
                 ]
               }
-              ]
             },
             {
               "Effect": "Allow",
@@ -482,6 +478,26 @@
                       "Ref": "KeyBucket"
                     },
                     "/enc_key"
+                  ]
+                ]
+              }
+              ]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:GetObject"
+              ],
+              "Resource": [
+              {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:s3:::",
+                    {
+                      "Ref": "IPBucket"
+                    },
+                    "/ips"
                   ]
                 ]
               }
