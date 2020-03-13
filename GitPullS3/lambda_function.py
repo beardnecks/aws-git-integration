@@ -4,7 +4,7 @@
 #  A copy of the License is located at http://aws.amazon.com/agreement/ .
 #  This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or implied.
 #  See the License for the specific language governing permissions and limitations under the License.
-
+import base64
 import distutils.util
 import hashlib
 import hmac
@@ -135,6 +135,7 @@ def github_event(event: dict):
     # Figure out how to check if event == pull_request.
     if event["params"]["header"]["X-GitHub-Event"] == "pull_request":
         pr = True
+
     # Check if it is a push or not
     push = False
     # Unsure wether this if statement works or not, must be tested.
@@ -159,10 +160,12 @@ def github_event(event: dict):
             raise Exception(
                 "PR action is not opened, it is %s" % event["body-json"]["action"]
             )
+
     # Check if PR to master
     # Regex object, string that starts with master, widlcard after. (master*)
-    regex = re.compile("^master")
     if pr:
+        regex_bytes = base64.b64decode(event["stage-variables"]["prregexbase64"])
+        regex = re.compile(regex_bytes.decode("utf-8"))
         if "base" in event["body-json"]["pull_request"] and not regex.match(
             event["body-json"]["pull_request"]["base"]["ref"]
         ):
@@ -178,8 +181,9 @@ def github_event(event: dict):
             prefix = "dev"
 
     # Check if: Push to master.
-    regex = re.compile("^refs/heads/master$")
     if push:
+        regex_bytes = base64.b64decode(event["stage-variables"]["branchregexbase64"])
+        regex = re.compile(regex_bytes.decode("utf-8"))
         if (
             "ref" in event["body-json"]
             and not regex.match(event["body-json"]["ref"])
@@ -194,21 +198,97 @@ def github_event(event: dict):
         else:
             prefix = "prod"
 
-    # GitHub publish event
     repo_name = full_name
-    try:
-        # branch names should contain [name] only, tag names - "tags/[name]"
-        branch_name = (
-            event["body-json"]["ref"]
-            .replace("refs/heads/", "")
-            .replace("refs/tags/", "tags/")
-        )
-    except KeyError:
-        branch_name = "master"
 
     remote_url = event["body-json"]["repository"]["ssh_url"]
 
     return remote_url, prefix, repo_name
+
+
+def bitbucket_event(event: dict):
+    repo_name = event["body-json"]["repository"]["full_name"]
+
+    # Check what type of event it is
+    pr = False
+    push = False
+
+    if event["params"]["header"]["X-Event-Key"] == "pullrequest:created":
+        pr = True
+    elif event["params"]["header"]["X-Event-Key"] == "repo:push":
+        push = True
+
+    # Check if there is PR or a push
+    if not (pr or push):
+        logger.error("This is not a Pull Request or a Push")
+        raise Exception("This is not a Pull Request or a Push")
+
+    # Check if: Opened PR
+    if pr:
+        if (
+            "action" in event["body-json"]
+            and event["body-json"]["action"] != "opened"
+            and not push
+        ):
+            logger.error(
+                "PR action is not opened, it is %s" % event["body-json"]["action"]
+            )
+            raise Exception(
+                "PR action is not opened, it is %s" % event["body-json"]["action"]
+            )
+
+    # Check if PR to master
+    if pr:
+        regex_bytes = base64.b64decode(event["stage-variables"]["prregexbase64"])
+        regex = re.compile(regex_bytes.decode("utf-8"))
+        if not regex.match(
+            event["body-json"]["pullrequest"]["destination"]["branch"]["name"]
+        ):
+            logger.error(
+                "PR is not to branch matching provided regex, it is %s"
+                % event["body-json"]["pullrequest"]["destination"]["branch"]["name"]
+            )
+            raise Exception(
+                "PR is not to to branch matching provided regex, it is %s"
+                % event["body-json"]["pullrequest"]["destination"]["branch"]["name"]
+            )
+        prefix = "dev"  # Should not be run through production pipeline
+
+    # Check if: Push to master.
+    if push:
+        regex_bytes = base64.b64decode(event["stage-variables"]["branchregexbase64"])
+        regex = re.compile(regex_bytes.decode("utf-8"))
+        if (
+            "ref" in event["body-json"]
+            and not regex.match(
+                event["body-json"]["push"]["changes"][0]["new"]["links"]["html"][
+                    "href"
+                ].split("/")[-1]
+            )
+            and not pr
+        ):
+            logger.error(
+                "Push is not to master, it is to %s"
+                % event["body-json"]["push"]["changes"][0]["new"]["links"]["html"][
+                    "href"
+                ].split("/")[-1]
+            )
+            raise Exception(
+                "Push is not to master it is to %s"
+                % event["body-json"]["push"]["changes"][0]["new"]["links"]["html"][
+                    "href"
+                ].split("/")[-1]
+            )
+        prefix = "prod"  # Run through production pipeline
+
+    remote_url = https_url_to_ssh_url(
+        event["body-json"]["repository"]["links"]["html"]["href"]
+    )
+
+    return remote_url, prefix, repo_name
+
+
+def https_url_to_ssh_url(url: str):
+    return "git@" + url.replace("https://", "").replace("/", ":", 1) + ".git"
 
 
 def lambda_handler(event: dict, context):
@@ -284,10 +364,14 @@ def lambda_handler(event: dict, context):
         logger.error("Source IP %s is not allowed" % event["context"]["source-ip"])
         raise Exception("Source IP %s is not allowed" % event["context"]["source-ip"])
 
+    # Check what git host sent webhook, and process accordingly
     if "GitHub" in event["params"]["header"]["User-Agent"]:
         remote_url, prefix, repo_name = github_event(event)
     elif "Bitbucket" in event["params"]["header"]["User-Agent"]:
-        print("Bitbucket event")
+        remote_url, prefix, repo_name = bitbucket_event(event)
+    else:
+        logger.error("Unknown git host %s" % event["params"]["header"]["User-Agent"])
+        raise Exception
 
     # try:
     #     # GitLab
