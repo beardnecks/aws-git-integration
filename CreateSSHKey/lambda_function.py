@@ -29,9 +29,13 @@ def lambda_handler(event, context):
                 crypto_serialization.PrivateFormat.PKCS8,
                 crypto_serialization.NoEncryption(),
             )
-            pub_key = new_key.public_key().public_bytes(
-                crypto_serialization.Encoding.OpenSSH,
-                crypto_serialization.PublicFormat.OpenSSH,
+            pub_key = (
+                new_key.public_key()
+                .public_bytes(
+                    crypto_serialization.Encoding.OpenSSH,
+                    crypto_serialization.PublicFormat.OpenSSH,
+                )
+                .decode("utf-8")
             )
             # Encrypt private key
             kms = boto3.client("kms", region_name=event["ResourceProperties"]["Region"])
@@ -68,8 +72,6 @@ def send(
 ):
     response_url = event["ResponseURL"]
 
-    print(response_url)
-
     response_body = {
         "Status": response_status,
         "Reason": "See the details in CloudWatch Log Stream: "
@@ -77,13 +79,12 @@ def send(
         "PhysicalResourceId": physical_resource_id or context.log_stream_name,
         "StackId": event["StackId"],
         "RequestId": event["RequestId"],
+        "LogicalResourceId": event["LogicalResourceId"],
         "NoEcho": no_echo,
         "Data": response_data,
     }
 
     json_response_body = json.dumps(response_body)
-
-    print("Response body:\n" + json_response_body)
 
     headers = {"content-type": "", "content-length": str(len(json_response_body))}
 
