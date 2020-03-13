@@ -37,23 +37,27 @@ def lambda_handler(event, context):
                 )
             # Delete IPBucket contents
             print()
-            "Getting KeyBucket objects..."
-            s3objects = s3.list_objects_v2(
-                Bucket=event["ResourceProperties"]["IPBucket"]
-            )
-            if "Contents" in list(s3objects.keys()):
-                print()
-                "Deleting IPBucket objects %s..." % str(
-                    [{"Key": key["Key"]} for key in s3objects["Contents"]]
+            print(event["ResourceProperties"])
+            try:
+                "Getting KeyBucket objects..."
+                s3objects = s3.list_objects_v2(
+                    Bucket=event["ResourceProperties"]["IPBucket"]
                 )
-                s3.delete_objects(
-                    Bucket=event["ResourceProperties"]["IPBucket"],
-                    Delete={
-                        "Objects": [
-                            {"Key": key["Key"]} for key in s3objects["Contents"]
-                        ]
-                    },
-                )
+                if "Contents" in list(s3objects.keys()):
+                    print()
+                    "Deleting IPBucket objects %s..." % str(
+                        [{"Key": key["Key"]} for key in s3objects["Contents"]]
+                    )
+                    s3.delete_objects(
+                        Bucket=event["ResourceProperties"]["IPBucket"],
+                        Delete={
+                            "Objects": [
+                                {"Key": key["Key"]} for key in s3objects["Contents"]
+                            ]
+                        },
+                    )
+            except Exception as e:
+                print(e)
 
             # Delete Output bucket contents and versions
             print()
@@ -102,8 +106,6 @@ def send(
 ):
     response_url = event["ResponseURL"]
 
-    print(response_url)
-
     response_body = {
         "Status": response_status,
         "Reason": "See the details in CloudWatch Log Stream: "
@@ -117,8 +119,6 @@ def send(
     }
 
     json_response_body = json.dumps(response_body)
-
-    print("Response body:\n" + json_response_body)
 
     headers = {"content-type": "", "content-length": str(len(json_response_body))}
 
