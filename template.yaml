@@ -20,7 +20,8 @@
         },
         "Parameters": [
           "ApiSecret",
-          "AllowedIps"
+          "AllowedIps",
+          "BranchRegex"
         ]
       }
       ],
@@ -36,6 +37,12 @@
         },
         "OutputBucketName": {
           "default": "Output S3 Bucket Name"
+        },
+        "BranchRegex": {
+          "default": "Regex for what branches to run pipeline"
+        },
+        "PRRegex": {
+          "default": "Regex for what pull requests to run pipeline"
         }
       }
     }
@@ -65,6 +72,16 @@
       "Description": "Hostname to override the incoming json request with",
       "Type": "String",
       "Default": ""
+    },
+    "BranchRegex": {
+      "Description": "Regex for what branches to run pipeline",
+      "Type": "String",
+      "Default": "^refs/heads/master$"
+    },
+    "PRRegex": {
+      "Description": "Regex for what pull requests to run pipeline",
+      "Type": "String",
+      "Default": "^master"
     }
   },
   "Conditions": {
@@ -676,6 +693,8 @@
                           "    \"resource-path\" : \"$context.resourcePath\",\n",
                           "    \"allowed-ips\" : \"$stageVariables.allowedips\",\n",
                           "    \"api-secrets\" : \"$stageVariables.apisecrets\",\n",
+                          "    \"branch-regex-base64\" : \"$stageVariables.branchregexbase64\",\n",
+                          "    \"pr-regex-base64\" : \"$stageVariables.prregexbase64\",\n",
                           "    \"key-bucket\" : \"",
                           {
                             "Ref": "KeyBucket"
@@ -758,6 +777,16 @@
                 "Ref": "AWS::NoValue"
               }
             ]
+          },
+          "branchregexbase64": {
+            "Fn::Base64": {
+              "Ref": "BranchRegex"
+            }
+          },
+          "prregexbase64": {
+            "Fn::Base64": {
+              "Ref": "PRRegex"
+            }
           }
         }
       }
