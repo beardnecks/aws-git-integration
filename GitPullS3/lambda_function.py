@@ -22,8 +22,8 @@ from git import Remote, Repo, exc
 
 # If true the function will not include .git folder in the zip
 exclude_git = bool(distutils.util.strtobool(os.environ["ExcludeGit"]))
-ip_bucket = distutils.util.strtobool(os.environ["IPBucket"])
-ip_lambda = distutils.util.strtobool(os.environ["IPLambda"])
+ip_bucket = os.environ["IPBucket"]
+ip_lambda = os.environ["IPLambda"]
 
 
 key = "enc_key"
