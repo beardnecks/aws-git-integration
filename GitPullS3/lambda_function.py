@@ -22,6 +22,9 @@ from git import Remote, Repo, exc
 
 # If true the function will not include .git folder in the zip
 exclude_git = bool(distutils.util.strtobool(os.environ["ExcludeGit"]))
+ip_bucket = distutils.util.strtobool(os.environ["IPBucket"])
+ip_lambda = distutils.util.strtobool(os.environ["IPLambda"])
+
 
 key = "enc_key"
 
@@ -63,10 +66,16 @@ def get_keys(keybucket, pubkey, update=False):
         write_key("/tmp/id_rsa.pub", str.encode(pubkey))
 
 
-def get_ips(ipbucket):
+def get_ips():
     if not os.path.isfile("/tmp/ips"):
         logger.info("IPs not found on lambda container, fetching from s3...")
-        s3.downlaod_file(ipbucket, "ips", "/tmp/ips")
+        try:
+            s3.download_file(ip_bucket, "ips", "/tmp/ips")
+        except Exception as e:
+            lambda_client = client("lambda")
+            lambda_client.invoke(FunctionName="")
+            s3.download_file(ip_bucket, "ips", "/tmp/ips")
+
 
 
 def init_remote(repo, name, url):
@@ -303,9 +312,8 @@ def lambda_handler(event: dict, context):
     keybucket = event["context"]["key-bucket"]
     outputbucket = event["context"]["output-bucket"]
     pubkey = event["context"]["public-key"]
-    ipbucket = event["context"]["ip-bucket"]
 
-    get_ips(ipbucket)
+    get_ips()
     f = open("/tmp/ips", "r")
     # Source IP ranges to allow requests from,
     # if the IP is in one of these the request will not be chacked for an api key
