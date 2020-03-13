@@ -685,6 +685,10 @@
                           {
                             "Ref": "KeyBucket"
                           },
+                          "    \"ip-bucket\" : \"",
+                          {
+                            "Ref": "IPBucket"
+                          },
                           "\",\n",
                           "    \"output-bucket\" : \"$stageVariables.outputbucket\",\n",
                           "    \"public-key\" : \"",
