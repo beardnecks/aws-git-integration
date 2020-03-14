@@ -192,7 +192,7 @@ def github_event(event: dict):
                 % event["body-json"]["pull_request"]["base"]["ref"]
             )
         prefix = "dev"
-        branch = event["body-json"]["ref"].replace("refs/heads/", "")
+        branch = event["body-json"]["pull_request"]["head"]["ref"]
 
     # Check if: Push to master.
     if push:
