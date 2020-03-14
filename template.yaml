@@ -21,7 +21,8 @@
         "Parameters": [
           "ApiSecret",
           "AllowedIps",
-          "BranchRegex"
+          "DevBranchRegex",
+          "ProdBranchRegex"
         ]
       }
       ],
@@ -38,11 +39,14 @@
         "OutputBucketName": {
           "default": "Output S3 Bucket Name"
         },
-        "BranchRegex": {
-          "default": "Regex for what branches to run pipeline"
+        "DevBranchRegex": {
+          "default": "Regex for what branches to run development pipeline"
+        },
+        "ProdBranchRegex": {
+          "default": "Regex for what branches to run production pipeline"
         },
         "PRRegex": {
-          "default": "Regex for what pull requests to run pipeline"
+          "default": "Regex for what pull requests to run pipeline based on destination branch"
         }
       }
     }
@@ -73,13 +77,18 @@
       "Type": "String",
       "Default": ""
     },
-    "BranchRegex": {
-      "Description": "Regex for what branches to run pipeline",
+    "ProdBranchRegex": {
+      "Description": "Regex for what branches to run production pipeline",
       "Type": "String",
-      "Default": "^refs/heads/master$"
+      "Default": "^master"
+    },
+    "DevBranchRegex": {
+      "Description": "Regex for what branches to run development pipeline",
+      "Type": "String",
+      "Default": "^(?!master).+"
     },
     "PRRegex": {
-      "Description": "Regex for what pull requests to run pipeline",
+      "Description": "Regex for what pull requests to run pipeline based on destination branch",
       "Type": "String",
       "Default": "^master"
     }
@@ -719,7 +728,8 @@
                           "    \"resource-path\" : \"$context.resourcePath\",\n",
                           "    \"allowed-ips\" : \"$stageVariables.allowedips\",\n",
                           "    \"api-secrets\" : \"$stageVariables.apisecrets\",\n",
-                          "    \"branch-regex-base64\" : \"$stageVariables.branchregexbase64\",\n",
+                          "    \"dev-branch-regex-base64\" : \"$stageVariables.devbranchregexbase64\",\n",
+                          "    \"prod-branch-regex-base64\" : \"$stageVariables.prodbranchregexbase64\",\n",
                           "    \"pr-regex-base64\" : \"$stageVariables.prregexbase64\",\n",
                           "    \"key-bucket\" : \"",
                           {
@@ -809,9 +819,14 @@
               }
             ]
           },
-          "branchregexbase64": {
+          "devbranchregexbase64": {
             "Fn::Base64": {
-              "Ref": "BranchRegex"
+              "Ref": "DevBranchRegex"
+            }
+          },
+          "prodbranchregexbase64": {
+            "Fn::Base64": {
+              "Ref": "ProdBranchRegex"
             }
           },
           "prregexbase64": {
