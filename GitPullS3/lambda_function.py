@@ -230,7 +230,7 @@ def bitbucket_event(event: dict):
         prefix = "dev"  # Should not be run through production pipeline
         branch = event["body-json"]["pullrequest"]["source"]["branch"]["name"]
         remote_url = https_url_to_ssh_url(
-            event["body-json"]["repository"]["links"]["html"]["href"]
+            event["body-json"]["pullrequest"]["source"]["repository"]["links"]["html"]["href"]
         )
 
     # Check if: Push to master.
