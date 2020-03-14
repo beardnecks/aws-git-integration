@@ -266,7 +266,15 @@ def bitbucket_event(event: dict):
 
 
 def https_url_to_ssh_url(url: str):
-    return "git@" + url.replace("https://", "").replace("/", ":", 1) + ".git"
+    if ".git" in url[-4:]:
+        return url.replace("https://", "git@").replace("/", ":", 1)
+    return url.replace("https://", "git@").replace("/", ":", 1) + ".git"
+
+
+def ssh_url_to_https_url(url: str):
+    if ".git" in url[-4:]:
+        return url.replace(":", "/", 1).replace("git@", "https://")
+    return url.replace(":", "/", 1).replace("git@", "https://") + ".git"
 
 
 def lambda_handler(event: dict, context):
