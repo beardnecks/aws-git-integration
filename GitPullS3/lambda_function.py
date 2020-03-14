@@ -157,8 +157,7 @@ def github_event(event: dict):
         branch = event["body-json"]["pull_request"]["head"]["ref"]
         remote_url = event["body-json"]["pull_request"]["head"]["repo"]["ssh_url"]
 
-
-# Check if: Push to master.
+    # Check if: Push to master.
     if push:
         regex_bytes = base64.b64decode(event["stage-variables"]["branchregexbase64"])
         regex = re.compile(regex_bytes.decode("utf-8"))
@@ -176,7 +175,6 @@ def github_event(event: dict):
         prefix = "prod"
         branch = event["body-json"]["ref"].replace("refs/heads/", "")
         remote_url = event["body-json"]["repository"]["ssh_url"]
-
 
     return remote_url, prefix, repo_name, branch
 
@@ -231,6 +229,9 @@ def bitbucket_event(event: dict):
             )
         prefix = "dev"  # Should not be run through production pipeline
         branch = event["body-json"]["pullrequest"]["source"]["branch"]["name"]
+        remote_url = https_url_to_ssh_url(
+            event["body-json"]["repository"]["links"]["html"]["href"]
+        )
 
     # Check if: Push to master.
     if push:
@@ -259,10 +260,9 @@ def bitbucket_event(event: dict):
             )
         prefix = "prod"  # Run through production pipeline
         branch = event["body-json"]["push"]["changes"][0]["new"]["name"]
-
-    remote_url = https_url_to_ssh_url(
-        event["body-json"]["repository"]["links"]["html"]["href"]
-    )
+        remote_url = https_url_to_ssh_url(
+            event["body-json"]["repository"]["links"]["html"]["href"]
+        )
 
     return remote_url, prefix, repo_name, branch
 
