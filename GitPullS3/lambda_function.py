@@ -155,8 +155,10 @@ def github_event(event: dict):
             )
         prefix = "dev"
         branch = event["body-json"]["pull_request"]["head"]["ref"]
+        remote_url = event["body-json"]["pull_request"]["head"]["repo"]["ssh_url"]
 
-    # Check if: Push to master.
+
+# Check if: Push to master.
     if push:
         regex_bytes = base64.b64decode(event["stage-variables"]["branchregexbase64"])
         regex = re.compile(regex_bytes.decode("utf-8"))
@@ -173,8 +175,8 @@ def github_event(event: dict):
             )
         prefix = "prod"
         branch = event["body-json"]["ref"].replace("refs/heads/", "")
+        remote_url = event["body-json"]["repository"]["ssh_url"]
 
-    remote_url = event["body-json"]["repository"]["ssh_url"]
 
     return remote_url, prefix, repo_name, branch
 
