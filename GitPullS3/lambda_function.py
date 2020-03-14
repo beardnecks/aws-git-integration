@@ -127,24 +127,23 @@ def github_event(event: dict):
     # Check if: Opened PR
     if pr:
         if (
-            "action" in event["body-json"]
-            and event["body-json"]["action"] != "opened"
-            and not push
+            event["body-json"]["action"] != "opened"
+            and event["body-json"]["action"] != "synchronize"
         ):
             logger.error(
-                "PR action is not opened, it is %s" % event["body-json"]["action"]
+                "PR action is not opened or synchronize, it is %s"
+                % event["body-json"]["action"]
             )
             raise Exception(
-                "PR action is not opened, it is %s" % event["body-json"]["action"]
+                "PR action is not opened or synchronize, it is %s"
+                % event["body-json"]["action"]
             )
 
     # Check if PR to master
     if pr:
         regex_bytes = base64.b64decode(event["stage-variables"]["prregexbase64"])
         regex = re.compile(regex_bytes.decode("utf-8"))
-        if "base" in event["body-json"]["pull_request"] and not regex.match(
-            event["body-json"]["pull_request"]["base"]["ref"]
-        ):
+        if regex.match(event["body-json"]["pull_request"]["base"]["ref"]):
             logger.error(
                 "PR is not to master, it is %s"
                 % event["body-json"]["pull_request"]["base"]["ref"]
@@ -159,20 +158,31 @@ def github_event(event: dict):
 
     # Check if: Push to master.
     if push:
-        regex_bytes = base64.b64decode(event["stage-variables"]["branchregexbase64"])
-        regex = re.compile(regex_bytes.decode("utf-8"))
-        if (
-            "ref" in event["body-json"]
-            and not regex.match(event["body-json"]["ref"])
-            and not pr
-        ):
+        devregex_bytes = base64.b64decode(
+            event["stage-variables"]["devbranchregexbase64"]
+        )
+        devregex = re.compile(devregex_bytes.decode("utf-8"))
+
+        prodregex_bytes = base64.b64decode(
+            event["stage-variables"]["prodbranchregexbase64"]
+        )
+        prodregex = re.compile(prodregex_bytes.decode("utf-8"))
+
+        if devregex.match(event["body-json"]["ref"].replace("refs/heads/", "")):
+            prefix = "dev"
+
+        elif prodregex.match(event["body-json"]["ref"].replace("refs/heads/", "")):
+            prefix = "prod"
+        else:
             logger.error(
-                "Push is not to master, it is to %s" % event["body-json"]["ref"]
+                "Push does not match a registered regex, it is to branch %s"
+                % event["body-json"]["ref"]
             )
             raise Exception(
-                "Push is not to master it is to %s" % event["body-json"]["ref"]
+                "Push does not match a registered regex, it is to branch %s"
+                % event["body-json"]["ref"]
             )
-        prefix = "prod"
+
         branch = event["body-json"]["ref"].replace("refs/heads/", "")
         remote_url = event["body-json"]["repository"]["ssh_url"]
 
@@ -225,17 +235,30 @@ def bitbucket_event(event: dict):
 
     # Check if: Push to master.
     if push:
-        regex_bytes = base64.b64decode(event["stage-variables"]["branchregexbase64"])
-        regex = re.compile(regex_bytes.decode("utf-8"))
-        if (
-            "ref" in event["body-json"]
-            and not regex.match(
-                event["body-json"]["push"]["changes"][0]["new"]["links"]["html"][
-                    "href"
-                ].split("/")[-1]
-            )
-            and not pr
+        devregex_bytes = base64.b64decode(
+            event["stage-variables"]["devbranchregexbase64"]
+        )
+        devregex = re.compile(devregex_bytes.decode("utf-8"))
+
+        prodregex_bytes = base64.b64decode(
+            event["stage-variables"]["prodbranchregexbase64"]
+        )
+        prodregex = re.compile(prodregex_bytes.decode("utf-8"))
+
+        if devregex.match(
+            event["body-json"]["push"]["changes"][0]["new"]["links"]["html"][
+                "href"
+            ].split("/")[-1]
         ):
+            prefix = "dev"
+
+        elif prodregex.match(
+            event["body-json"]["push"]["changes"][0]["new"]["links"]["html"][
+                "href"
+            ].split("/")[-1]
+        ):
+            prefix = "prod"
+        else:
             logger.error(
                 "Push is not to master, it is to %s"
                 % event["body-json"]["push"]["changes"][0]["new"]["links"]["html"][
@@ -248,7 +271,7 @@ def bitbucket_event(event: dict):
                     "href"
                 ].split("/")[-1]
             )
-        prefix = "prod"  # Run through production pipeline
+
         branch = event["body-json"]["push"]["changes"][0]["new"]["name"]
         remote_url = https_url_to_ssh_url(
             event["body-json"]["repository"]["links"]["html"]["href"]
@@ -350,6 +373,18 @@ def lambda_handler(event: dict, context):
             "Error pulling new repo %s, branch %s in %s"
             % (remote_url, branch, repo_path)
         )
+    except exc.GitCommandError as e:
+        logger.error("Error running command, trying with https...")
+        remote_url = ssh_url_to_https_url(remote_url)
+        logger.info("Cloning repository from %s" % remote_url)
+        Repo.clone_from(
+            remote_url,
+            repo_path,
+            depth=1,
+            branch=branch,
+            env=dict(GIT_SSH_COMMAND=git_ssh_cmd),
+        )
+
     zipfile = zip_repo(repo_path, repo_name)
     push_s3(zipfile, repo_name, prefix, outputbucket)
     logger.info("Cleanup Lambda container...")
