@@ -356,6 +356,10 @@ def lambda_handler(event: dict, context):
             "Error pulling new repo %s, branch %s in %s"
             % (remote_url, branch, repo_path)
         )
+        raise Exception(
+            "Error pulling new repo %s, branch %s in %s"
+            % (remote_url, branch, repo_path)
+        )
     zipfile = zip_repo(repo_path, repo_name)
     push_s3(zipfile, repo_name, prefix, outputbucket)
     logger.info("Cleanup Lambda container...")
