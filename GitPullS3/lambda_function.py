@@ -143,19 +143,16 @@ def push_s3(filename, repo_name, prefix, outputbucket):
 
 
 def github_event(event: dict):
-    full_name = event["body-json"]["repository"]["full_name"]
+    repo_name = event["body-json"]["repository"]["full_name"]
 
     # Check if it is a pull request(PR) or not.
     pr = False
-    # Unsure wether this if statement works or not, must be tested.
+    push = False
+
     # Figure out how to check if event == pull_request.
     if event["params"]["header"]["X-GitHub-Event"] == "pull_request":
         pr = True
-
-    # Check if it is a push or not
-    push = False
-    # Unsure wether this if statement works or not, must be tested.
-    if event["params"]["header"]["X-GitHub-Event"] == "push":
+    elif event["params"]["header"]["X-GitHub-Event"] == "push":
         push = True
 
     # Check if there is PR or a push
@@ -213,8 +210,6 @@ def github_event(event: dict):
             )
         else:
             prefix = "prod"
-
-    repo_name = full_name
 
     remote_url = event["body-json"]["repository"]["ssh_url"]
 
@@ -317,7 +312,7 @@ def lambda_handler(event: dict, context):
     get_ips()
     f = open("/tmp/ips", "r")
     # Source IP ranges to allow requests from,
-    # if the IP is in one of these the request will not be chacked for an api key
+    # if the IP is in one of these the request will not be checked for an api key
     ipranges = []
     for i in f.read().split(","):
         ipranges.append(ip_network("%s" % i))
@@ -368,7 +363,6 @@ def lambda_handler(event: dict, context):
         raise Exception
 
     repo_path = "/tmp/%s" % repo_name
-    # creds = RemoteCallbacks(credentials=get_keys(keybucket, pubkey), )
     get_keys(keybucket, pubkey)
     git_ssh_cmd = "ssh -i /tmp/id_rsa -o StrictHostKeyChecking=no"
     try:
