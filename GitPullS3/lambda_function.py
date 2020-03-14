@@ -79,44 +79,6 @@ def get_ips():
             s3.download_file(ip_bucket, "ips", "/tmp/ips")
 
 
-def init_remote(repo, name, url):
-    remote = repo.remotes.create(name, url, "+refs/*:refs/*")
-    return remote
-
-
-def create_repo(repo_path, remote_url):
-    if os.path.exists(repo_path):
-        logger.info("Cleaning up repo path...")
-        shutil.rmtree(repo_path)
-    repo = Repo.clone_from(remote_url, repo_path, depth=1)
-
-    return repo
-
-
-def pull_repo(repo, branch_name, remote_url):
-    remote_exists = False
-    for r in repo.remotes:
-        if r.url == remote_url:
-            remote_exists = True
-            remote = r
-    if not remote_exists:
-        remote = repo.create_remote("origin", remote_url)
-    logger.info(
-        "Fetching and merging changes from %s branch %s", remote_url, branch_name
-    )
-    remote.fetch()
-    if branch_name.startswith("tags/"):
-        ref = "refs/" + branch_name
-    else:
-        ref = "refs/remotes/origin/" + branch_name
-    remote_branch_id = repo.lookup_reference(ref).target
-    repo.checkout_tree(repo.get(remote_branch_id))
-    # branch_ref = repo.lookup_reference('refs/heads/' + branch_name)
-    # branch_ref.set_target(remote_branch_id)
-    repo.head.set_target(remote_branch_id)
-    return repo
-
-
 def zip_repo(repo_path, repo_name):
     logger.info("Creating zipfile...")
     zf = ZipFile("/tmp/" + repo_name.replace("/", "_") + ".zip", "w")
@@ -380,7 +342,10 @@ def lambda_handler(event: dict, context):
             branch=branch,
         )
     except (exc.NoSuchPathError, exc.InvalidGitRepositoryError) as e:
-        logger.error("Error pulling new repo %s, branch %s in %s" % (remote_url, branch, repo_path))
+        logger.error(
+            "Error pulling new repo %s, branch %s in %s"
+            % (remote_url, branch, repo_path)
+        )
     zipfile = zip_repo(repo_path, repo_name)
     push_s3(zipfile, repo_name, prefix, outputbucket)
     logger.info("Cleanup Lambda container...")
