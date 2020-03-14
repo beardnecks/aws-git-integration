@@ -354,30 +354,6 @@ def lambda_handler(event: dict, context):
             if k1 == k2:
                 secure = True
 
-    try:
-        # GitHub
-        full_name = event["body-json"]["repository"]["full_name"]
-    except KeyError:
-        try:
-            # BitBucket #14
-            full_name = event["body-json"]["repository"]["fullName"]
-        except KeyError:
-            try:
-                # GitLab
-                full_name = event["body-json"]["repository"]["path_with_namespace"]
-            except KeyError:
-                try:
-                    # GitLab 8.5+
-                    full_name = event["body-json"]["project"]["path_with_namespace"]
-                except KeyError:
-                    try:
-                        # BitBucket server
-                        full_name = event["body-json"]["repository"]["name"]
-                    except KeyError:
-                        # BitBucket pull-request
-                        full_name = event["body-json"]["pullRequest"]["fromRef"][
-                            "repository"
-                        ]["name"]
     if not secure:
         logger.error("Source IP %s is not allowed" % event["context"]["source-ip"])
         raise Exception("Source IP %s is not allowed" % event["context"]["source-ip"])
@@ -390,47 +366,6 @@ def lambda_handler(event: dict, context):
     else:
         logger.error("Unknown git host %s" % event["params"]["header"]["User-Agent"])
         raise Exception
-
-    # try:
-    #     # GitLab
-    #     remote_url = event["body-json"]["project"]["git_ssh_url"]
-    # except Exception:
-    #     try:
-    #         remote_url = (
-    #                 "git@"
-    #                 + event["body-json"]["repository"]["links"]["html"]["href"]
-    #                 .replace("https://", "")
-    #                 .replace("/", ":", 1)
-    #                 + ".git"
-    #         )
-    #     except Exception:
-    #         try:
-    #             # GitHub
-    #             remote_url = event["body-json"]["repository"]["ssh_url"]
-    #         except Exception:
-    #             # Bitbucket
-    #             try:
-    #                 for i, url in enumerate(
-    #                         event["body-json"]["repository"]["links"]["clone"]
-    #                 ):
-    #                     if url["name"] == "ssh":
-    #                         ssh_index = i
-    #                 remote_url = event["body-json"]["repository"]["links"]["clone"][
-    #                     ssh_index
-    #                 ]["href"]
-    #             except Exception:
-    #                 # BitBucket pull-request
-    #                 for i, url in enumerate(
-    #                         event["body-json"]["pullRequest"]["fromRef"]["repository"][
-    #                             "links"
-    #                         ]["clone"]
-    #                 ):
-    #                     if url["name"] == "ssh":
-    #                         ssh_index = i
-    #
-    #                 remote_url = event["body-json"]["pullRequest"]["fromRef"][
-    #                     "repository"
-    #                 ]["links"]["clone"][ssh_index]["href"]
 
     repo_path = "/tmp/%s" % repo_name
     # creds = RemoteCallbacks(credentials=get_keys(keybucket, pubkey), )
