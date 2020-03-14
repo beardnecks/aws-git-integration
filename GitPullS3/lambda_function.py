@@ -154,11 +154,13 @@ def github_event(event: dict):
         pr = True
     elif event["params"]["header"]["X-GitHub-Event"] == "push":
         push = True
-
-    # Check if there is PR or a push
-    if not (pr or push):
-        logger.error("This is not a Pull Request or a Push")
-        raise Exception("This is not a Pull Request or a Push")
+    else:
+        logger.error(
+            "Unknown github event %s" % event["params"]["header"]["X-GitHub-Event"]
+        )
+        raise Exception(
+            "Unknown github event %s" % event["params"]["header"]["X-GitHub-Event"]
+        )
 
     # Check if: Opened PR
     if pr:
@@ -175,7 +177,6 @@ def github_event(event: dict):
             )
 
     # Check if PR to master
-    # Regex object, string that starts with master, widlcard after. (master*)
     if pr:
         regex_bytes = base64.b64decode(event["stage-variables"]["prregexbase64"])
         regex = re.compile(regex_bytes.decode("utf-8"))
@@ -190,8 +191,8 @@ def github_event(event: dict):
                 "PR is not to master, it is %s"
                 % event["body-json"]["pull_request"]["base"]["ref"]
             )
-        else:
-            prefix = "dev"
+        prefix = "dev"
+        branch = event["body-json"]["ref"].replace("refs/heads/", "")
 
     # Check if: Push to master.
     if push:
@@ -208,12 +209,12 @@ def github_event(event: dict):
             raise Exception(
                 "Push is not to master it is to %s" % event["body-json"]["ref"]
             )
-        else:
-            prefix = "prod"
+        prefix = "prod"
+        branch = event["body-json"]["ref"].replace("refs/heads/", "")
 
     remote_url = event["body-json"]["repository"]["ssh_url"]
 
-    return remote_url, prefix, repo_name
+    return remote_url, prefix, repo_name, branch
 
 
 def bitbucket_event(event: dict):
@@ -227,11 +228,13 @@ def bitbucket_event(event: dict):
         pr = True
     elif event["params"]["header"]["X-Event-Key"] == "repo:push":
         push = True
-
-    # Check if there is PR or a push
-    if not (pr or push):
-        logger.error("This is not a Pull Request or a Push")
-        raise Exception("This is not a Pull Request or a Push")
+    else:
+        logger.error(
+            "Unknown bitbucket event %s" % event["params"]["header"]["X-Event-Key"]
+        )
+        raise Exception(
+            "Unknown bitbucket event %s" % event["params"]["header"]["X-Event-Key"]
+        )
 
     # Check if: Opened PR
     if pr:
@@ -263,6 +266,7 @@ def bitbucket_event(event: dict):
                 % event["body-json"]["pullrequest"]["destination"]["branch"]["name"]
             )
         prefix = "dev"  # Should not be run through production pipeline
+        branch = event["body-json"]["pullrequest"]["source"]["branch"]["name"]
 
     # Check if: Push to master.
     if push:
@@ -290,12 +294,13 @@ def bitbucket_event(event: dict):
                 ].split("/")[-1]
             )
         prefix = "prod"  # Run through production pipeline
+        branch = event["body-json"]["push"]["changes"][0]["new"]["name"]
 
     remote_url = https_url_to_ssh_url(
         event["body-json"]["repository"]["links"]["html"]["href"]
     )
 
-    return remote_url, prefix, repo_name
+    return remote_url, prefix, repo_name, branch
 
 
 def https_url_to_ssh_url(url: str):
@@ -355,9 +360,9 @@ def lambda_handler(event: dict, context):
 
     # Check what git host sent webhook, and process accordingly
     if "GitHub" in event["params"]["header"]["User-Agent"]:
-        remote_url, prefix, repo_name = github_event(event)
+        remote_url, prefix, repo_name, branch = github_event(event)
     elif "Bitbucket" in event["params"]["header"]["User-Agent"]:
-        remote_url, prefix, repo_name = bitbucket_event(event)
+        remote_url, prefix, repo_name, branch = bitbucket_event(event)
     else:
         logger.error("Unknown git host %s" % event["params"]["header"]["User-Agent"])
         raise Exception
@@ -368,10 +373,14 @@ def lambda_handler(event: dict, context):
     try:
         logger.info("Cloning repository from %s" % remote_url)
         Repo.clone_from(
-            remote_url, repo_path, depth=1, env=dict(GIT_SSH_COMMAND=git_ssh_cmd)
+            remote_url,
+            repo_path,
+            depth=1,
+            env=dict(GIT_SSH_COMMAND=git_ssh_cmd),
+            branch=branch,
         )
     except (exc.NoSuchPathError, exc.InvalidGitRepositoryError) as e:
-        logger.error("Error pulling new repo for %s in %s" % (remote_url, repo_path))
+        logger.error("Error pulling new repo %s, branch %s in %s" % (remote_url, branch, repo_path))
     zipfile = zip_repo(repo_path, repo_name)
     push_s3(zipfile, repo_name, prefix, outputbucket)
     logger.info("Cleanup Lambda container...")
