@@ -188,6 +188,8 @@ def bitbucket_event(event: dict):
 
     if event["params"]["header"]["X-Event-Key"] == "pullrequest:created":
         pr = True
+    elif event["params"]["header"]["X-Event-Key"] == "pullrequest:updated":
+        pr = True
     elif event["params"]["header"]["X-Event-Key"] == "repo:push":
         push = True
     else:
@@ -197,20 +199,6 @@ def bitbucket_event(event: dict):
         raise Exception(
             "Unknown bitbucket event %s" % event["params"]["header"]["X-Event-Key"]
         )
-
-    # Check if: Opened PR
-    if pr:
-        if (
-            "action" in event["body-json"]
-            and event["body-json"]["action"] != "opened"
-            and not push
-        ):
-            logger.error(
-                "PR action is not opened, it is %s" % event["body-json"]["action"]
-            )
-            raise Exception(
-                "PR action is not opened, it is %s" % event["body-json"]["action"]
-            )
 
     # Check if PR to master
     if pr:
@@ -230,7 +218,9 @@ def bitbucket_event(event: dict):
         prefix = "dev"  # Should not be run through production pipeline
         branch = event["body-json"]["pullrequest"]["source"]["branch"]["name"]
         remote_url = https_url_to_ssh_url(
-            event["body-json"]["pullrequest"]["source"]["repository"]["links"]["html"]["href"]
+            event["body-json"]["pullrequest"]["source"]["repository"]["links"]["html"][
+                "href"
+            ]
         )
 
     # Check if: Push to master.
@@ -348,8 +338,8 @@ def lambda_handler(event: dict, context):
             remote_url,
             repo_path,
             depth=1,
-            env=dict(GIT_SSH_COMMAND=git_ssh_cmd),
             branch=branch,
+            env=dict(GIT_SSH_COMMAND=git_ssh_cmd),
         )
     except (exc.NoSuchPathError, exc.InvalidGitRepositoryError) as e:
         logger.error(
