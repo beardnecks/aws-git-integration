@@ -143,13 +143,13 @@ def github_event(event: dict):
     if pr:
         regex_bytes = base64.b64decode(event["stage-variables"]["prregexbase64"])
         regex = re.compile(regex_bytes.decode("utf-8"))
-        if regex.match(event["body-json"]["pull_request"]["base"]["ref"]):
+        if not regex.match(event["body-json"]["pull_request"]["base"]["ref"]):
             logger.error(
-                "PR is not to master, it is %s"
+                "PR is not to master, it is to %s"
                 % event["body-json"]["pull_request"]["base"]["ref"]
             )
             raise Exception(
-                "PR is not to master, it is %s"
+                "PR is not to master, it is to %s"
                 % event["body-json"]["pull_request"]["base"]["ref"]
             )
         prefix = "dev"
