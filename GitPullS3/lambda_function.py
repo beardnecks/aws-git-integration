@@ -8,6 +8,7 @@ import base64
 import distutils.util
 import hashlib
 import hmac
+import json
 import logging
 import os
 # Regex
@@ -385,6 +386,10 @@ def lambda_handler(event: dict, context):
             env=dict(GIT_SSH_COMMAND=git_ssh_cmd),
         )
 
+    f = open(repo_path + "/event.json", "wb")
+    event_json = json.dumps(event)
+    f.write(event_json.encode())
+    f.close()
     zipfile = zip_repo(repo_path, repo_name)
     push_s3(zipfile, repo_name, prefix, outputbucket)
     logger.info("Cleanup Lambda container...")
