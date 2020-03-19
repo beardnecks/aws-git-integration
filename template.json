@@ -10,7 +10,7 @@
           "default": "General Settings"
         },
         "Parameters": [
-          "OutputBucketName",
+          "SourceBucketName",
           "CustomDomainName"
         ]
       },
@@ -36,8 +36,8 @@
         "CustomDomainName": {
           "default": "Custom Domain Name"
         },
-        "OutputBucketName": {
-          "default": "Output S3 Bucket Name"
+        "SourceBucketName": {
+          "default": "Source code S3 Bucket Name"
         },
         "DevBranchRegex": {
           "default": "Regex for what branches to run development pipeline"
@@ -67,7 +67,7 @@
       "Type": "String",
       "Default": ""
     },
-    "OutputBucketName": {
+    "SourceBucketName": {
       "Description": "OPTIONAL: Bucket Name where the zip file output should be placed, if left blank a bucket name will be automatically generated.",
       "Type": "String",
       "Default": ""
@@ -130,12 +130,12 @@
       }
       ]
     },
-    "AutoGenOutputBucketName": {
+    "AutoGenSourceBucketName": {
       "Fn::Not": [
       {
         "Fn::Equals": [
         {
-          "Ref": "OutputBucketName"
+          "Ref": "SourceBucketName"
         },
         ""
         ]
@@ -156,14 +156,14 @@
         "Tags": []
       }
     },
-    "OutputBucket": {
+    "SourceBucket": {
       "Type": "AWS::S3::Bucket",
       "Properties": {
         "BucketName": {
           "Fn::If": [
-            "AutoGenOutputBucketName",
+            "AutoGenSourceBucketName",
             {
-              "Ref": "OutputBucketName"
+              "Ref": "SourceBucketName"
             },
             {
               "Ref": "AWS::NoValue"
@@ -453,7 +453,7 @@
                   [
                     "arn:aws:s3:::",
                     {
-                      "Ref": "OutputBucket"
+                      "Ref": "SourceBucket"
                     }
                   ]
                 ]
@@ -464,7 +464,7 @@
                   [
                     "arn:aws:s3:::",
                     {
-                      "Ref": "OutputBucket"
+                      "Ref": "SourceBucket"
                     },
                     "/*"
                   ]
@@ -795,7 +795,7 @@
         "StageName": "Prod",
         "Variables": {
           "outputbucket": {
-            "Ref": "OutputBucket"
+            "Ref": "SourceBucket"
           },
           "allowedips": {
             "Fn::If": [
@@ -928,7 +928,7 @@
                   [
                     "arn:aws:s3:::",
                     {
-                      "Ref": "OutputBucket"
+                      "Ref": "SourceBucket"
                     },
                     "/*"
                   ]
@@ -962,7 +962,7 @@
                   [
                     "arn:aws:s3:::",
                     {
-                      "Ref": "OutputBucket"
+                      "Ref": "SourceBucket"
                     }
                   ]
                 ]
@@ -1007,7 +1007,7 @@
       "Version": "1.0",
       "DependsOn": [
         "KeyBucket",
-        "OutputBucket"
+        "SourceBucket"
       ],
       "Properties": {
         "ServiceToken": {
@@ -1020,7 +1020,7 @@
           "Ref": "KeyBucket"
         },
         "OutputBucket": {
-          "Ref": "OutputBucket"
+          "Ref": "SourceBucket"
         },
         "IPBucket": {
           "Ref": "IPBucket"
@@ -1168,9 +1168,9 @@
         ]
       }
     },
-    "OutputBucketName": {
+    "SourceBucketName": {
       "Value": {
-        "Ref": "OutputBucket"
+        "Ref": "SourceBucket"
       }
     }
   }
