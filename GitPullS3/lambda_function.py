@@ -294,10 +294,9 @@ def ssh_url_to_https_url(url: str):
 
 
 def lambda_handler(event: dict, context):
-    print(type(event))
-    print(event)  # TODO: Remove debug
-    keybucket = event["context"]["key-bucket"]
-    outputbucket = event["context"]["output-bucket"]
+    logger.info(event)
+    key_bucket = event["context"]["key-bucket"]
+    output_bucket = event["context"]["output-bucket"]
     pubkey = event["context"]["public-key"]
 
     get_ips()
@@ -354,7 +353,7 @@ def lambda_handler(event: dict, context):
         raise Exception
 
     repo_path = "/tmp/%s" % repo_name
-    get_keys(keybucket, pubkey)
+    get_keys(key_bucket, pubkey)
     git_ssh_cmd = "ssh -i /tmp/id_rsa -o StrictHostKeyChecking=no"
     try:
         logger.info("Cloning repository from %s" % remote_url)
@@ -391,7 +390,7 @@ def lambda_handler(event: dict, context):
     f.write(event_json.encode())
     f.close()
     zipfile = zip_repo(repo_path, repo_name)
-    push_s3(zipfile, repo_name, prefix, outputbucket)
+    push_s3(zipfile, repo_name, prefix, output_bucket)
     logger.info("Cleanup Lambda container...")
     shutil.rmtree(repo_path)
     os.remove(zipfile)
