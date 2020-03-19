@@ -19,9 +19,6 @@ def lambda_handler(event: dict, context):
     resp = requests.get("https://api.github.com/meta")
     github_resp = resp.json()
 
-    for ip in github_resp["hooks"]:
-        valid_ips += ip + ","
-
     for ip in github_resp["web"]:
         valid_ips += ip + ","
 
@@ -29,12 +26,6 @@ def lambda_handler(event: dict, context):
         valid_ips += ip + ","
 
     for ip in github_resp["git"]:
-        valid_ips += ip + ","
-
-    for ip in github_resp["pages"]:
-        valid_ips += ip + ","
-
-    for ip in github_resp["importer"]:
         valid_ips += ip + ","
 
     f = open("/tmp/ips", "wb")

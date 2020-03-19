@@ -1007,7 +1007,8 @@
       "Version": "1.0",
       "DependsOn": [
         "KeyBucket",
-        "OutputBucket"
+        "OutputBucket",
+        "IPBucket"
       ],
       "Properties": {
         "ServiceToken": {

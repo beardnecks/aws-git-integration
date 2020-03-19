@@ -19,7 +19,7 @@ from ipaddress import ip_address, ip_network
 from zipfile import ZipFile
 
 from boto3 import client
-from git import Remote, Repo, exc
+from git import Repo, exc
 
 # If true the function will not include .git folder in the zip
 exclude_git = bool(distutils.util.strtobool(os.environ["ExcludeGit"]))
@@ -140,7 +140,7 @@ def github_event(event: dict):
                 % event["body-json"]["action"]
             )
 
-    # Check if PR to master
+    # Check if PR to branch matching prregex
     if pr:
         regex_bytes = base64.b64decode(event["stage-variables"]["prregexbase64"])
         regex = re.compile(regex_bytes.decode("utf-8"))
@@ -156,6 +156,7 @@ def github_event(event: dict):
         prefix = "dev"
         branch = event["body-json"]["pull_request"]["head"]["ref"]
         remote_url = event["body-json"]["pull_request"]["head"]["repo"]["ssh_url"]
+        return remote_url, prefix, repo_name, branch
 
     # Check if: Push to master.
     if push:
@@ -171,7 +172,6 @@ def github_event(event: dict):
 
         if devregex.match(event["body-json"]["ref"].replace("refs/heads/", "")):
             prefix = "dev"
-
         elif prodregex.match(event["body-json"]["ref"].replace("refs/heads/", "")):
             prefix = "prod"
         else:
@@ -233,6 +233,7 @@ def bitbucket_event(event: dict):
                 "href"
             ]
         )
+        return remote_url, prefix, repo_name, branch
 
     # Check if: Push to master.
     if push:
