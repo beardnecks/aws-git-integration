@@ -72,11 +72,6 @@
       "Type": "String",
       "Default": ""
     },
-    "ScmHostnameOverride": {
-      "Description": "Hostname to override the incoming json request with",
-      "Type": "String",
-      "Default": ""
-    },
     "ProdBranchRegex": {
       "Description": "Regex for what branches to run production pipeline",
       "Type": "String",
@@ -373,10 +368,6 @@
     "CreateSSHKey": {
       "Type": "AWS::CloudFormation::CustomResource",
       "Version": "1.0",
-      "DependsOn": [
-        "KeyBucket",
-        "KMSKey"
-      ],
       "Properties": {
         "ServiceToken": {
           "Fn::GetAtt": [
@@ -533,7 +524,7 @@
       "Type": "AWS::Serverless::Function",
       "Properties": {
         "Handler": "lambda_function.lambda_handler",
-        "MemorySize": 196,
+        "MemorySize": 192,
         "Role": {
           "Fn::GetAtt": [
             "GitPullRole",
@@ -741,7 +732,7 @@
                             "Ref": "IPBucket"
                           },
                           "\",\n",
-                          "    \"output-bucket\" : \"$stageVariables.outputbucket\",\n",
+                          "    \"source-bucket\" : \"$stageVariables.sourcebucket\",\n",
                           "    \"public-key\" : \"",
                           {
                             "Ref": "CreateSSHKey"
@@ -794,7 +785,7 @@
         },
         "StageName": "Prod",
         "Variables": {
-          "outputbucket": {
+          "sourcebucket": {
             "Ref": "SourceBucket"
           },
           "allowedips": {
@@ -1005,11 +996,6 @@
     "DeleteBucketContents": {
       "Type": "AWS::CloudFormation::CustomResource",
       "Version": "1.0",
-      "DependsOn": [
-        "KeyBucket",
-        "IPBucket",
-        "SourceBucket"
-      ],
       "Properties": {
         "ServiceToken": {
           "Fn::GetAtt": [
@@ -1020,7 +1006,7 @@
         "KeyBucket": {
           "Ref": "KeyBucket"
         },
-        "OutputBucket": {
+        "SourceBucket": {
           "Ref": "SourceBucket"
         },
         "IPBucket": {

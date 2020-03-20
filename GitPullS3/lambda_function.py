@@ -97,11 +97,11 @@ def zip_repo(repo_path, repo_name):
     return "/tmp/" + repo_name.replace("/", "_") + ".zip"
 
 
-def push_s3(filename, repo_name, prefix, outputbucket):
+def push_s3(filename, repo_name, prefix, source_bucket):
     s3key = "%s/%s/%s" % (repo_name, prefix, filename.replace("/tmp/", ""))
-    logger.info("pushing zip to s3://%s/%s" % (outputbucket, s3key))
+    logger.info("pushing zip to s3://%s/%s" % (source_bucket, s3key))
     data = open(filename, "rb")
-    s3.put_object(Bucket=outputbucket, Body=data, Key=s3key)
+    s3.put_object(Bucket=source_bucket, Body=data, Key=s3key)
     logger.info("Completed S3 upload...")
 
 
@@ -297,7 +297,7 @@ def ssh_url_to_https_url(url: str):
 def lambda_handler(event: dict, context):
     logger.info(event)
     key_bucket = event["context"]["key-bucket"]
-    output_bucket = event["context"]["output-bucket"]
+    source_bucket = event["context"]["source-bucket"]
     pubkey = event["context"]["public-key"]
 
     get_ips()
@@ -391,7 +391,7 @@ def lambda_handler(event: dict, context):
     f.write(event_json.encode())
     f.close()
     zipfile = zip_repo(repo_path, repo_name)
-    push_s3(zipfile, repo_name, prefix, output_bucket)
+    push_s3(zipfile, repo_name, prefix, source_bucket)
     logger.info("Cleanup Lambda container...")
     shutil.rmtree(repo_path)
     os.remove(zipfile)
