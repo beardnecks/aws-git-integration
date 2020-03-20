@@ -10,7 +10,7 @@
           "default": "General Settings"
         },
         "Parameters": [
-          "OutputBucketName",
+          "SourceBucketName",
           "CustomDomainName"
         ]
       },
@@ -36,8 +36,8 @@
         "CustomDomainName": {
           "default": "Custom Domain Name"
         },
-        "OutputBucketName": {
-          "default": "Output S3 Bucket Name"
+        "SourceBucketName": {
+          "default": "Source code S3 Bucket Name"
         },
         "DevBranchRegex": {
           "default": "Regex for what branches to run development pipeline"
@@ -55,7 +55,7 @@
     "AllowedIps": {
       "Description": "gitpull method only. Comma seperated list of IP CIDR blocks for source IP authentication. The BitBucket Cloud IP ranges are provided as defaults.",
       "Type": "String",
-      "Default": "192.30.252.0/22,185.199.108.0/22,140.82.112.0/20,13.114.40.48/32,13.229.188.59/32,13.234.176.102/32,13.234.210.38/32,13.236.229.21/32,13.237.44.5/32,13.250.177.223/32,15.164.81.167/32,18.194.104.89/32,18.195.85.27/32,18.228.52.138/32,18.228.67.229/32,18.231.5.6/32,35.159.8.160/32,52.192.72.89/32,52.64.108.95/32,52.69.186.44/32,52.74.223.119/32,52.78.231.108/32"
+      "Default": ""
     },
     "ApiSecret": {
       "Description": "gitpull method only. WebHook Secrets for use with GitHub Enterprise and GitLab. If a secret is matched IP range authentication is bypassed. Cannot contain: , \\ \"",
@@ -67,7 +67,7 @@
       "Type": "String",
       "Default": ""
     },
-    "OutputBucketName": {
+    "SourceBucketName": {
       "Description": "OPTIONAL: Bucket Name where the zip file output should be placed, if left blank a bucket name will be automatically generated.",
       "Type": "String",
       "Default": ""
@@ -130,12 +130,12 @@
       }
       ]
     },
-    "AutoGenOutputBucketName": {
+    "AutoGenSourceBucketName": {
       "Fn::Not": [
       {
         "Fn::Equals": [
         {
-          "Ref": "OutputBucketName"
+          "Ref": "SourceBucketName"
         },
         ""
         ]
@@ -156,14 +156,14 @@
         "Tags": []
       }
     },
-    "OutputBucket": {
+    "SourceBucket": {
       "Type": "AWS::S3::Bucket",
       "Properties": {
         "BucketName": {
           "Fn::If": [
-            "AutoGenOutputBucketName",
+            "AutoGenSourceBucketName",
             {
-              "Ref": "OutputBucketName"
+              "Ref": "SourceBucketName"
             },
             {
               "Ref": "AWS::NoValue"
@@ -453,7 +453,7 @@
                   [
                     "arn:aws:s3:::",
                     {
-                      "Ref": "OutputBucket"
+                      "Ref": "SourceBucket"
                     }
                   ]
                 ]
@@ -464,7 +464,7 @@
                   [
                     "arn:aws:s3:::",
                     {
-                      "Ref": "OutputBucket"
+                      "Ref": "SourceBucket"
                     },
                     "/*"
                   ]
@@ -795,7 +795,7 @@
         "StageName": "Prod",
         "Variables": {
           "outputbucket": {
-            "Ref": "OutputBucket"
+            "Ref": "SourceBucket"
           },
           "allowedips": {
             "Fn::If": [
@@ -928,7 +928,7 @@
                   [
                     "arn:aws:s3:::",
                     {
-                      "Ref": "OutputBucket"
+                      "Ref": "SourceBucket"
                     },
                     "/*"
                   ]
@@ -962,7 +962,7 @@
                   [
                     "arn:aws:s3:::",
                     {
-                      "Ref": "OutputBucket"
+                      "Ref": "SourceBucket"
                     }
                   ]
                 ]
@@ -1007,8 +1007,8 @@
       "Version": "1.0",
       "DependsOn": [
         "KeyBucket",
-        "OutputBucket",
-        "IPBucket"
+        "IPBucket",
+        "SourceBucket"
       ],
       "Properties": {
         "ServiceToken": {
@@ -1021,7 +1021,7 @@
           "Ref": "KeyBucket"
         },
         "OutputBucket": {
-          "Ref": "OutputBucket"
+          "Ref": "SourceBucket"
         },
         "IPBucket": {
           "Ref": "IPBucket"
@@ -1169,9 +1169,9 @@
         ]
       }
     },
-    "OutputBucketName": {
+    "SourceBucketName": {
       "Value": {
-        "Ref": "OutputBucket"
+        "Ref": "SourceBucket"
       }
     }
   }
