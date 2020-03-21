@@ -535,7 +535,7 @@
         "Timeout": 300,
         "Environment": {
           "Variables": {
-            "ExcludeGit": "False",
+            "ExcludeGit": "True",
             "IPBucket": {
               "Ref": "IPBucket"
             },
