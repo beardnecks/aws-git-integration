@@ -1,3 +1,12 @@
+"""Generate rsa key-pair on CFN create event
+
+The function generates a 2048 bit RSA key-pair upon a CFN create request.
+It then returns the public key, to be used as the physical ID of a
+CloudFormation custom resource, while the private key is encrypted
+using KMS, and uploaded to a specified S3 bucket.
+
+"""
+
 #  Copyright 2016 Amazon Web Services, Inc. or its affiliates. All Rights Reserved.
 #  This file is licensed to you under the AWS Customer Agreement (the "License").
 #  You may not use this file except in compliance with the License.
@@ -53,7 +62,7 @@ def lambda_handler(event, context):
         else:
             pub_key = event["PhysicalResourceId"]
         send(event, context, SUCCESS, {}, pub_key)
-    except Exception:
+    except Exception as e:
         traceback.print_exc()
         send(event, context, FAILED, {}, "")
 
@@ -70,6 +79,22 @@ def send(
     physical_resource_id=None,
     no_echo=False,
 ):
+    """Send CloudFormation Custom Resource Response
+
+    :param event: Lambda provided event
+    :param context: Lambda provided context
+    :param response_status: The status value sent by the custom resource provider in response to
+            an AWS CloudFormation-generated request.
+            (SUCCESS or FAILURE)
+    :param response_data: Data in body of request
+    :param physical_resource_id: This value should be an identifier unique to the custom resource vendor,
+        and can be up to 1 Kb in size. The value must be a non-empty string and must be identical for all
+        responses for the same resource.
+    :param no_echo: Optional. Indicates whether to mask the output of the custom resource when retrieved
+            by using the Fn::GetAtt function. If set to true, all returned values are masked with
+            asterisks (*****).
+            The default value is false.
+    """
     response_url = event["ResponseURL"]
 
     response_body = {
