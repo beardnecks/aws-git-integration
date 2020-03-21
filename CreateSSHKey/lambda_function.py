@@ -27,6 +27,11 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 
 
 def lambda_handler(event, context):
+    """Generates RSA key-pair, upload private key encrypted to a bucket and returns public key to CFN
+
+    :param event: Lambda event information from AWS
+    :param context: Lambda context information from AWS
+    """
     try:
         if event["RequestType"] == "Create":
             # Generate keys

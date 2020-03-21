@@ -1,3 +1,12 @@
+"""Empty buckets on received CloudFormation delete event
+
+Deletes contents of KeyBucket, IPBucket and SourceBucket when the
+CloudFormation template gets deleted. This allows CloudFormation
+to delete the mentioned buckets without issue, as a bucket with
+contents can not be deleted by CloudFormation
+"""
+
+
 #  Copyright 2016 Amazon Web Services, Inc. or its affiliates. All Rights Reserved.
 #  This file is licensed to you under the AWS Customer Agreement (the "License").
 #  You may not use this file except in compliance with the License.
@@ -13,6 +22,12 @@ import requests
 
 
 def lambda_handler(event, context):
+    """
+
+    :param event: Lambda event information from AWS
+    :param context: Lambda context information from AWS
+    :return:
+    """
     try:
         if event["RequestType"] == "Delete":
             s3 = boto3.client("s3")
@@ -59,12 +74,12 @@ def lambda_handler(event, context):
             except Exception as e:
                 print(e)
 
-            # Delete Output bucket contents and versions
+            # Delete Source bucket contents and versions
             print()
-            "Getting OutputBucket objects..."
+            "Getting SourceBucket objects..."
             objects = []
             versions = s3.list_object_versions(
-                Bucket=event["ResourceProperties"]["OutputBucket"]
+                Bucket=event["ResourceProperties"]["SourceBucket"]
             )
             while versions:
                 if "Versions" in list(versions.keys()):
@@ -75,18 +90,18 @@ def lambda_handler(event, context):
                         objects.append({"Key": v["Key"], "VersionId": v["VersionId"]})
                 if versions["IsTruncated"]:
                     versions = s3.list_object_versions(
-                        Bucket=event["ResourceProperties"]["OutputBucket"],
+                        Bucket=event["ResourceProperties"]["SourceBucket"],
                         VersionIdMarker=versions["NextVersionIdMarker"],
                     )
                 else:
                     versions = False
             if objects:
                 s3.delete_objects(
-                    Bucket=event["ResourceProperties"]["OutputBucket"],
+                    Bucket=event["ResourceProperties"]["SourceBucket"],
                     Delete={"Objects": objects},
                 )
         send(event, context, SUCCESS, {}, "")
-    except Exception:
+    except Exception as e:
         print()
         traceback.print_exc()
         send(event, context, FAILED, {}, "")
@@ -104,6 +119,22 @@ def send(
     physical_resource_id=None,
     no_echo=False,
 ):
+    """Send CloudFormation Custom Resource Response
+
+    :param event: Lambda provided event
+    :param context: Lambda provided context
+    :param response_status: The status value sent by the custom resource provider in response to
+            an AWS CloudFormation-generated request.
+            (SUCCESS or FAILURE)
+    :param response_data: Data in body of request
+    :param physical_resource_id: This value should be an identifier unique to the custom resource vendor,
+        and can be up to 1 Kb in size. The value must be a non-empty string and must be identical for all
+        responses for the same resource.
+    :param no_echo: Optional. Indicates whether to mask the output of the custom resource when retrieved
+            by using the Fn::GetAtt function. If set to true, all returned values are masked with
+            asterisks (*****).
+            The default value is false.
+    """
     response_url = event["ResponseURL"]
 
     response_body = {

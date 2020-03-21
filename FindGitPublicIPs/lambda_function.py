@@ -1,3 +1,9 @@
+"""Creates a list of the public IPs for Bitbucket and Github
+
+Fetches an updated list of Bitbucket and Github public server IPs
+to be used for authenticating webhooks in the GitPull lambda function
+"""
+
 import os
 
 import boto3
@@ -5,6 +11,15 @@ import requests
 
 
 def lambda_handler(event: dict, context):
+    """Creates a list of the public IPs for Bitbucket and Github
+
+
+    After creating a comma separated list the function uploads the file
+    to an S3 bucket for use by the GitPull lambda
+    :param event: Lambda event information from AWS - Not used
+    :param context: Lambda context information from AWS - Not used
+    :return:
+    """
     ip_bucket = os.environ["IPBucket"]
 
     # Bitbucket IPs
