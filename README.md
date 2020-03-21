@@ -1,5 +1,8 @@
-# quickstart-git2s3
-## Git webhooks with AWS services
+# Git to S3
+Originally based on the [AWS quickstart git2s3](https://github.com/aws-quickstart/quickstart-git2s3) stack.
+
+An aws SAM application that uploads git repository to a S3 bucket.
+
 ### Linking your Git repository to Amazon S3 and AWS services for continuous code integration, testing, and deployment 
 
 This Quick Start deploys HTTPS endpoints and AWS Lambda functions for implementing webhooks, to enable event-driven integration between Git services and Amazon Web Services (AWS) on the AWS Cloud.
