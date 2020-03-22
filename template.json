@@ -770,8 +770,7 @@
       "Properties": {
         "RestApiId": {
           "Ref": "WebHookApi"
-        },
-        "StageName": "DummyStage"
+        }
       }
     },
     "WebHookApiProdStage": {
