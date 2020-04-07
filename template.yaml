@@ -323,7 +323,7 @@ Resources:
             Ref: IPBucket
           IPLambda:
             Ref: FindGitPublicIPsLambda
-      CodeUri: GitPull/
+      CodeUri: GitPullS3/
       Layers:
       - arn:aws:lambda:eu-west-1:553035198032:layer:git:10
   WebHookRole:
