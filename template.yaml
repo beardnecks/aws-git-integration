@@ -215,7 +215,7 @@ Resources:
   CreateSSHKeyLambda:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: CreateSSHKeyLambda
+      CodeUri: CreateSSHKey/
       Handler: app.lambda_handler
       MemorySize: 128
       Role:
@@ -323,7 +323,7 @@ Resources:
             Ref: IPBucket
           IPLambda:
             Ref: FindGitPublicIPsLambda
-      CodeUri: GitPullLambda
+      CodeUri: GitPull/
       Layers:
       - arn:aws:lambda:eu-west-1:553035198032:layer:git:10
   WebHookRole:
@@ -697,7 +697,7 @@ Resources:
         - Arn
       Runtime: python3.7
       Timeout: 300
-      CodeUri: DeleteBucketContentsLambda
+      CodeUri: DeleteBucketContents/
   DeleteBucketContents:
     Type: AWS::CloudFormation::CustomResource
     Version: '1.0'
@@ -747,7 +747,7 @@ Resources:
   FindGitPublicIPsLambda:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: FindGitPublicIPsLambda
+      CodeUri: FindGitPublicIPs/
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Runtime: python3.7
