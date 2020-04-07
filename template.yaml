@@ -216,7 +216,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: CreateSSHKey/
-      Handler: app.lambda_handler
+      Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role:
         Fn::GetAtt:
@@ -308,7 +308,7 @@ Resources:
   GitPullLambda:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: app.lambda_handler
+      Handler: lambda_function.lambda_handler
       MemorySize: 192
       Role:
         Fn::GetAtt:
@@ -689,7 +689,7 @@ Resources:
   DeleteBucketContentsLambda:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: app.lambda_handler
+      Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role:
         Fn::GetAtt:
