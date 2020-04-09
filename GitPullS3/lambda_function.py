@@ -18,6 +18,7 @@ import hmac
 import json
 import logging
 import os
+
 # Regex
 import re
 import shutil
@@ -150,7 +151,8 @@ def push_s3(full_file_path: str, repo_name: str, prefix: str, source_bucket: str
 
     Uploads file from full_file_path to source_bucket in location
     s3://source_bucket/repo_name/prefix/full_file_path with full_file_path stripped of
-    /tmp/.
+    /tmp/. Also uploads /tmp/event.json to s3://source_bucket/repo_name/prefix/events/
+    using the version id of the uploaded zip as filename
 
     :param full_file_path: Full path of file to be uploaded. Must be path in /tmp
     :param repo_name: Full name of the git repository, in form username/repository
@@ -161,11 +163,16 @@ def push_s3(full_file_path: str, repo_name: str, prefix: str, source_bucket: str
     s3key = "%s/%s/%s" % (repo_name, prefix, full_file_path.replace("/tmp/", ""))
     logger.info("pushing zip to s3://%s/%s" % (source_bucket, s3key))
     data = open(full_file_path, "rb")
+    resp = s3.put_object(Bucket=source_bucket, Body=data, Key=s3key)
+    logger.info("Response: %s" % resp)
+    s3key = "%s/%s/events/%s" % (repo_name, prefix, resp["VersionId"])
+    logger.info("pushing event.json to s3://%s/%s" % (source_bucket, s3key))
+    data = open("/tmp/event.json", "rb")
     s3.put_object(Bucket=source_bucket, Body=data, Key=s3key)
     logger.info("Completed S3 upload...")
 
 
-def github_event(event: dict)  -> (str, str, str, str):
+def github_event(event: dict) -> (str, str, str, str):
     """Return repository information for a github repository
 
     Returns information about a github repository based on incoming API gateway
@@ -496,9 +503,9 @@ def lambda_handler(event: dict, context):
             env=dict(GIT_SSH_COMMAND=git_ssh_cmd),
         )
 
-    # Store the event from lambda in the source code zip file, to provide git information
+    # Store the event from lambda in separate folder in bucket, to provide git information
     # to pipeline steps or functions
-    f = open(repo_path + "/event.json", "wb")
+    f = open("/tmp/event.json", "wb")
     event_json = json.dumps(event)
     f.write(event_json.encode())
     f.close()
