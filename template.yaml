@@ -109,6 +109,10 @@ Resources:
       VersioningConfiguration:
         Status: Enabled
       Tags: []
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
   KMSKey:
     Type: AWS::KMS::Key
     Properties:
