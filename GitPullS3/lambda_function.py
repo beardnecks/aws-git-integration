@@ -153,26 +153,29 @@ def zip_repo(repo_path: str, repo_name: str) -> str:
     return "/tmp/" + repo_name.replace("/", "_") + ".zip"
 
 
-def push_s3(full_file_path: str, repo_name: str, prefix: str, source_bucket: str):
+def push_s3(
+    full_file_path: str, repo_name: str, prefix: str, source_bucket: str, branch: str
+):
     """Uploads a file to a given path in S3
 
     Uploads file from full_file_path to source_bucket in location
-    s3://source_bucket/repo_name/prefix/full_file_path with full_file_path stripped of
-    /tmp/. Also uploads /tmp/event.json to s3://source_bucket/repo_name/prefix/events/
-    using the version id of the uploaded zip as filename
+    s3://source_bucket/repo_name/prefix/branch.zip. Also uploads /tmp/event.json to s3://source_bucket/repo_name/prefix/events/
+    using the version id of the uploaded zip as filename prefixed by the branch name
 
     :param full_file_path: Full path of file to be uploaded. Must be path in /tmp
     :param repo_name: Full name of the git repository, in form username/repository
     :param prefix: Dev or prod prefixes
     :param source_bucket: Name of bucket to upload the source code to
+    :param branch: The branch where the push or pull request originated from
     """
 
-    s3key = "%s/%s/%s" % (repo_name, prefix, full_file_path.replace("/tmp/", ""))
+    s3key = "%s/%s/%s.zip" % (repo_name, prefix, branch)
     logger.info("pushing zip to s3://%s/%s" % (source_bucket, s3key))
     data = open(full_file_path, "rb")
     resp = s3.put_object(Bucket=source_bucket, Body=data, Key=s3key)
     logger.info("Response: %s" % resp)
-    s3key = "%s/%s/events/%s" % (repo_name, prefix, resp["VersionId"])
+
+    s3key = "%s/%s/events/%s-%s" % (repo_name, prefix, branch,  resp["VersionId"])
     logger.info("pushing event.json to s3://%s/%s" % (source_bucket, s3key))
     data = open("/tmp/event.json", "rb")
     s3.put_object(Bucket=source_bucket, Body=data, Key=s3key)
@@ -534,7 +537,7 @@ def lambda_handler(event: dict, context):
     f.close()
 
     zipfile = zip_repo(repo_path, repo_name)
-    push_s3(zipfile, repo_name, prefix, source_bucket)
+    push_s3(zipfile, repo_name, prefix, source_bucket, branch)
     logger.info("Cleanup Lambda container...")
     shutil.rmtree(repo_path)
     os.remove(zipfile)
