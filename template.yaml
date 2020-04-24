@@ -764,6 +764,11 @@ Resources:
         Variables:
           IPBucket:
             Ref: IPBucket
+      Events:
+        InvocationLevel:
+          Type: Schedule
+          Properties:
+            Schedule: rate(12 hours)
 Outputs:
   CustomDomainNameCNAME:
     Value:
