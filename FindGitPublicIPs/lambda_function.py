@@ -44,7 +44,7 @@ def lambda_handler(event: dict, context):
         valid_ips += ip + ","
 
     f = open("/tmp/ips", "wb")
-    f.write(valid_ips.rstrip(",").encode())
+    f.write(valid_ips.rstrip(",").encode())  # Strip to remove trailing comma
     f.close()
     s3 = boto3.client("s3")
     s3.upload_file("/tmp/ips", ip_bucket, "ips")
