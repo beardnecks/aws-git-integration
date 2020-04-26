@@ -36,7 +36,6 @@ ip_lambda = os.environ[
     "IPLambda"
 ]  # Name of lambda function to create list of source IPs
 
-
 key = "enc_key"  # Name of private key file
 
 # Configure logger. Change level from logger.ERROR to obtain more information in run logs
@@ -96,14 +95,25 @@ def get_keys(key_bucket: str, pubkey: str, update: bool = False):
         write_key("/tmp/id_rsa.pub", str.encode(pubkey))
 
 
-def get_ips():
+def invoke_ip_lambda():
+    lambda_client = client("lambda")
+    lambda_client.invoke(
+        FunctionName=ip_lambda, InvocationType="RequestResponse", Payload=b"{}"
+    )
+
+
+def get_ips(override=False):
     """Downloads list of Github and Public IPs from ip_bucket
 
+    :param override: redownload IP list, even if file exists in container.
     """
 
-    if not os.path.isfile("/tmp/ips"):
+    if not os.path.isfile("/tmp/ips") or override:
         logger.info("IPs not found on lambda container, fetching from s3...")
         try:
+            if override:
+                invoke_ip_lambda()  # Force update IP list
+
             s3.download_file(ip_bucket, "ips", "/tmp/ips")
         except Exception as e:
             # File does not exist in the bucket, invoke ip_lambda to generate file and
@@ -111,10 +121,7 @@ def get_ips():
             logger.info(
                 "Could not locate file in bucket, invoking lambda to generate..."
             )
-            lambda_client = client("lambda")
-            lambda_client.invoke(
-                FunctionName=ip_lambda, InvocationType="RequestResponse", Payload=b"{}"
-            )
+            invoke_ip_lambda()
             s3.download_file(ip_bucket, "ips", "/tmp/ips")
 
 
@@ -392,6 +399,30 @@ def ssh_url_to_https_url(url: str) -> str:
     return url.replace(":", "/", 1).replace("git@", "https://") + ".git"
 
 
+def check_if_secure_ip(event: dict) -> bool:
+    """Check if source IP is part of the list of public endpoint IPs for Bitbucket or GitHub
+
+    :param event: Lambda event information provided by AWS
+    :return: Returns True if source IP is in ip list, False otherwise
+    """
+    f = open("/tmp/ips", "r")
+    # Source IP ranges to allow requests from,
+    # if the IP is in one of these the request will not be checked for an api key
+    ipranges = []
+    for i in f.read().split(","):
+        ipranges.append(ip_network("%s" % i))
+
+    # APIKeys, it is recommended to use a different API key for each repo that uses this function
+    ip = ip_address(event["context"]["source-ip"])
+
+    # Check if the request comes from an authorized IP or has a given API key
+    for net in ipranges:
+        if ip in net:
+            return True
+
+    return False
+
+
 def lambda_handler(event: dict, context):
     """Uploads a zip file of source code from a given git repository based on webhook event
 
@@ -409,22 +440,9 @@ def lambda_handler(event: dict, context):
     pubkey = event["context"]["public-key"]
 
     get_ips()  # Get list of public IPs from Github and Bitbucket
-    f = open("/tmp/ips", "r")
-    # Source IP ranges to allow requests from,
-    # if the IP is in one of these the request will not be checked for an api key
-    ipranges = []
-    for i in f.read().split(","):
-        ipranges.append(ip_network("%s" % i))
+    secure = check_if_secure_ip(event)
 
-    # APIKeys, it is recommended to use a different API key for each repo that uses this function
     apikeys = event["context"]["api-secrets"].split(",")
-    ip = ip_address(event["context"]["source-ip"])
-
-    # Check if the request comes from an authorized IP or has a given API key
-    secure = False
-    for net in ipranges:
-        if ip in net:
-            secure = True
 
     # NOTE: These have not been tested against recent API events, and may not work properly.
     if "X-Git-Token" in list(event["params"]["header"].keys()):
@@ -453,8 +471,13 @@ def lambda_handler(event: dict, context):
                 secure = True
 
     if not secure:
-        logger.error("Source IP %s is not allowed" % event["context"]["source-ip"])
-        raise Exception("Source IP %s is not allowed" % event["context"]["source-ip"])
+        # Invoke FindGitPublicIPs to update list, and recheck for match. Avoids issues with outdated list
+        get_ips(override=True)
+        if not check_if_secure_ip(event):
+            logger.error("Source IP %s is not allowed" % event["context"]["source-ip"])
+            raise Exception(
+                "Source IP %s is not allowed" % event["context"]["source-ip"]
+            )
 
     # Check what git host sent webhook, and process accordingly
     if "GitHub" in event["params"]["header"]["User-Agent"]:
