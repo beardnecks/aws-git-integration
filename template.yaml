@@ -109,6 +109,10 @@ Resources:
       VersioningConfiguration:
         Status: Enabled
       Tags: []
+      LifecycleConfiguration:
+        Rules:
+        - NoncurrentVersionExpirationInDays: 7
+          Status: Enabled
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
