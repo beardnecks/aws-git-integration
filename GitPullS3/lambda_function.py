@@ -455,14 +455,16 @@ def lambda_handler(event: dict, context):
         for k in apikeys:
             if "use-sha256" in event["context"]:
                 k1 = hmac.new(
-                    str(k), str(event["context"]["raw-body"]), hashlib.sha256
+                    str(k).encode,
+                    str.encode(event["context"]["raw-body"]), hashlib.sha256
                 ).hexdigest()
                 k2 = str(
                     event["params"]["header"]["X-Hub-Signature"].replace("sha256=", "")
                 )
             else:
                 k1 = hmac.new(
-                    str(k), str(event["context"]["raw-body"]), hashlib.sha1
+                    str(k).encode,
+                    str.encode(event["context"]["raw-body"]), hashlib.sha1
                 ).hexdigest()
                 k2 = str(
                     event["params"]["header"]["X-Hub-Signature"].replace("sha1=", "")
