@@ -5,6 +5,6 @@
 boto3 == 1.10.34
 
 # lambda_function.py: 11,12,13
-cryptography == 2.8
+cryptography == 3.2
 
 requests == 2.23.0
